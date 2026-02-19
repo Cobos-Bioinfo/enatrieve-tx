@@ -125,6 +125,10 @@ dmypy.json
 *.swo
 *~
 
+# Logs
+logs/
+*.log
+
 # Output files
 ena_transcriptomics_*.tsv
 RNA_seq_ENA.tsv

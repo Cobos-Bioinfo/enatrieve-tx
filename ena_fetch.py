@@ -17,18 +17,18 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
 
-from ena_api import (
+# Add src directory to Python path for local imports
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+from ena import (
     build_post_data,
     create_session,
     fetch_stream,
     write_response,
 )
 
-# configure module-level logger
-logging.basicConfig(
-    level=logging.INFO, format="%(levelname)s: %(message)s"
-)
 logger = logging.getLogger(__name__)
 
 
@@ -65,8 +65,52 @@ def parse_args() -> argparse.Namespace:
         default="RNA-Seq",
         help="Library strategy value to filter (default 'RNA-Seq').",
     )
+    parser.add_argument(
+        "--log",
+        default=None,
+        help="Log file path (default: logs/ena_fetch.log). Set to '' to disable file logging.",
+    )
 
     return parser.parse_args()
+
+
+def setup_logging(log_file: str | None) -> None:
+    """Configure logging with both stderr and optional file handler.
+
+    Args:
+        log_file: Path to log file. If None, creates logs/ena_fetch.log.
+                  If empty string, disables file logging.
+    """
+    # Configure root logger to capture all levels
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Remove any existing handlers
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Formatter for all handlers
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    # Stderr handler (always enabled)
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setLevel(logging.INFO)
+    stderr_handler.setFormatter(
+        logging.Formatter("%(levelname)s: %(message)s")
+    )
+    root_logger.addHandler(stderr_handler)
+
+    # File handler (if log_file is not empty string)
+    if log_file != "":
+        log_path = Path(log_file or "logs/ena_fetch.log")
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_path, mode="a")
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+        logger.info("Logging to file: %s", log_path.absolute())
 
 
 def main() -> None:
@@ -74,10 +118,12 @@ def main() -> None:
 
     Reads command-line arguments, constructs a single API query,
     writes the response to a TSV file or stdout, and logs progress
-    to stderr.
+    to stderr and optionally to a log file.
 
     """
     args = parse_args()
+    setup_logging(args.log)
+
     tax_id = args.tax_id
     output = args.output or f"ena_transcriptomics_{tax_id}.tsv"
     limit = args.limit

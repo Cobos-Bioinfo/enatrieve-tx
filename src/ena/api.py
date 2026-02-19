@@ -21,8 +21,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
-__version__ = "0.1.0"
-
 API_URL = "https://www.ebi.ac.uk/ena/portal/api/search"
 
 logger = logging.getLogger(__name__)
