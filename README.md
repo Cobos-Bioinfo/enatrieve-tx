@@ -1,4 +1,4 @@
-# ENA Transcriptomic Data Retriever
+# ENA Transcriptomic Data Retriever (enatrieve_tx)
 
 A Python tool for efficiently querying and downloading transcriptomic sequencing data from the EMBL-EBI ENA Portal API by NCBI taxonomy identifier.
 
@@ -48,7 +48,7 @@ Both `requests` and `urllib3` will be installed with compatible versions.
 Fetch all RNA-Seq transcriptomic data for taxonomy ID 2759 (Eukaryota):
 
 ```bash
-python ena_fetch.py --tax_id 2759
+python enatrieve_tx.py --tax_id 2759
 ```
 
 This creates `ena_transcriptomics_2759.tsv` in the current directory.
@@ -57,22 +57,22 @@ This creates `ena_transcriptomics_2759.tsv` in the current directory.
 
 **Save to custom output file:**
 ```bash
-python ena_fetch.py --tax_id 562 --output escherichia_coli_rna.tsv
+python enatrieve_tx.py --tax_id 562 --output escherichia_coli_rna.tsv
 ```
 
 **Output to stdout for piping:**
 ```bash
-python ena_fetch.py --tax_id 1 --output - | head -10
+python enatrieve_tx.py --tax_id 1 --output - | head -10
 ```
 
 **Reduce result limit for testing:**
 ```bash
-python ena_fetch.py --tax_id 2759 --limit 100 --output test_results.tsv
+python enatrieve_tx.py --tax_id 2759 --limit 100 --output test_results.tsv
 ```
 
 **Query for a different sequencing strategy:**
 ```bash
-python ena_fetch.py --tax_id 9606 --strategy miRNA-Seq --output human_mirna.tsv
+python enatrieve_tx.py --tax_id 9606 --strategy miRNA-Seq --output human_mirna.tsv
 ```
 
 ## Usage
@@ -80,8 +80,8 @@ python ena_fetch.py --tax_id 9606 --strategy miRNA-Seq --output human_mirna.tsv
 ### Command-Line Interface
 
 ```
-usage: ena_fetch.py [-h] --tax_id TAX_ID [--output OUTPUT] 
-                    [--limit LIMIT] [--strategy STRATEGY]
+usage: enatrieve_tx.py [-h] --tax_id TAX_ID [--output OUTPUT] 
+                       [--limit LIMIT] [--strategy STRATEGY] [--log LOG]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
@@ -125,16 +125,20 @@ INFO: Output saved to escherichia_coli_rna.tsv
 
 ```
 query-ena/
-├── ena_api.py          # Core library module
-├── ena_fetch.py        # CLI entry point
-├── requirements.txt    # Python dependencies
-├── .gitignore          # Git ignore patterns
-└── README.md           # This file
+├── src/
+│   └── ena/
+│       ├── __init__.py       # Package initialization
+│       └── api.py            # Core library module
+├── logs/                      # Timestamped log files (auto-created)
+├── enatrieve_tx.py           # CLI entry point
+├── requirements.txt          # Python dependencies
+├── .gitignore                # Git ignore patterns
+└── README.md                 # This file
 ```
 
 ### Module Descriptions
 
-#### `ena_api.py`
+#### `src/ena/api.py`
 
 Core library module providing reusable functions:
 
@@ -146,7 +150,7 @@ Core library module providing reusable functions:
 
 All functions include type hints and comprehensive docstrings.
 
-#### `ena_fetch.py`
+#### `enatrieve_tx.py`
 
 Command-line interface that orchestrates the library functions:
 
@@ -157,10 +161,10 @@ Command-line interface that orchestrates the library functions:
 
 ### ena_api Module
 
-For programmatic usage, import functions from `ena_api`:
+For programmatic usage, import functions from the `ena` package:
 
 ```python
-from ena_api import build_post_data, create_session, fetch_stream, write_response
+from ena import build_post_data, create_session, fetch_stream, write_response
 import sys
 
 # Build query parameters
@@ -219,7 +223,7 @@ Both are included in `requirements.txt` for easy installation.
 To verify basic functionality:
 
 ```bash
-python ena_fetch.py --tax_id 562 --limit 1 --output - | head -3
+python enatrieve_tx.py --tax_id 562 --limit 1 --output - | head -3
 ```
 
 Expected output format:

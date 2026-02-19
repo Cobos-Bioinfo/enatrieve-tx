@@ -2,7 +2,7 @@
 """CLI for retrieving transcriptomic data from the ENA Portal API by taxonomy ID.
 
 Usage:
-    python ena_fetch.py --tax_id 2759
+    python enatrieve_tx.py --tax_id 2759
 
 The script queries the ENA Portal API for transcriptomic runs and writes
 results to a TSV file or stdout. The query uses the ``tax_tree()`` operator
@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--log",
         default=None,
-        help="Log file path (default: logs/ena_fetch_<timestamp>.log). Set to '' to disable file logging.",
+        help="Log file path (default: logs/enatrieve_tx_<timestamp>.log). Set to '' to disable file logging.",
     )
 
     return parser.parse_args()
@@ -109,7 +109,7 @@ def setup_logging(log_file: str | None) -> None:
         # Generate timestamped filename if log_file is None
         if log_file is None:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            log_path = Path(f"logs/ena_fetch_{timestamp}.log")
+            log_path = Path(f"logs/enatrieve_tx_{timestamp}.log")
         else:
             log_path = Path(log_file)
 
