@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # Add src directory to Python path for local imports
@@ -68,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--log",
         default=None,
-        help="Log file path (default: logs/ena_fetch.log). Set to '' to disable file logging.",
+        help="Log file path (default: logs/ena_fetch_<timestamp>.log). Set to '' to disable file logging.",
     )
 
     return parser.parse_args()
@@ -78,8 +79,9 @@ def setup_logging(log_file: str | None) -> None:
     """Configure logging with both stderr and optional file handler.
 
     Args:
-        log_file: Path to log file. If None, creates logs/ena_fetch.log.
-                  If empty string, disables file logging.
+        log_file: Path to log file. If None, creates timestamped log in logs/ directory.
+                  If empty string, disables file logging (stderr only).
+                  If a path is provided, uses it as-is without timestamps.
     """
     # Configure root logger to capture all levels
     root_logger = logging.getLogger()
@@ -104,9 +106,15 @@ def setup_logging(log_file: str | None) -> None:
 
     # File handler (if log_file is not empty string)
     if log_file != "":
-        log_path = Path(log_file or "logs/ena_fetch.log")
+        # Generate timestamped filename if log_file is None
+        if log_file is None:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            log_path = Path(f"logs/ena_fetch_{timestamp}.log")
+        else:
+            log_path = Path(log_file)
+
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_path, mode="a")
+        file_handler = logging.FileHandler(log_path, mode="w")
         file_handler.setLevel(logging.INFO)
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
