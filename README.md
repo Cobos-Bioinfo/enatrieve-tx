@@ -31,7 +31,7 @@ The tool streams results directly to TSV format, supports both file and stdout o
 1. Clone or download the repository:
    ```bash
    git clone <repository-url>
-   cd query-ena
+   cd enatrieve-tx
    ```
 
 2. Install dependencies:
@@ -124,7 +124,7 @@ INFO: Output saved to escherichia_coli_rna.tsv
 ## Project Structure
 
 ```
-query-ena/
+enatrieve-tx/
 ├── src/
 │   └── ena/
 │       ├── __init__.py       # Package initialization
