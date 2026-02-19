@@ -132,3 +132,6 @@ logs/
 # Output files
 ena_transcriptomics_*.tsv
 RNA_seq_ENA.tsv
+
+# Context7 docs
+context7-ena-docs.txt
