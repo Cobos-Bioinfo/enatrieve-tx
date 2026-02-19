@@ -30,7 +30,7 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 1. Clone or download the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Cobos-Bioinfo/enatrieve-tx.git
    cd enatrieve-tx
    ```
 
@@ -235,7 +235,7 @@ run_accession   experiment_title   ...
 
 ### Code Style
 
-The project uses type hints and follows PEP 8. All functions include docstrings.
+The project uses type hints and follows PEP 8.
 
 ### Version History
 
