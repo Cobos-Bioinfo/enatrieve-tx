@@ -33,6 +33,11 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments into an argparse.Namespace object.
+
+    Returns:
+        argparse.Namespace: populated with the parsed arguments.
+    """
     parser = argparse.ArgumentParser(
         description="Fetch ENA transcriptomic run metadata for a tax_id."
     )
@@ -65,6 +70,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Main entry point for the CLI.
+
+    Reads command-line arguments, constructs a single API query,
+    writes the response to a TSV file or stdout, and logs progress
+    to stderr.
+
+    """
     args = parse_args()
     tax_id = args.tax_id
     output = args.output or f"ena_transcriptomics_{tax_id}.tsv"
