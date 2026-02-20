@@ -44,19 +44,21 @@ The tool streams results directly to TSV format, supports both file and stdout o
 ### Command-Line Interface
 
 ```
-usage: enatrieve_tx.py [-h] --tax_id TAX_ID [--output OUTPUT] 
-                       [--limit LIMIT] [--strategy STRATEGY] [--log LOG]
+usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
 options:
-  -h, --help          show this help message and exit
-  --tax_id TAX_ID     NCBI taxonomy identifier to query (string or integer) [required]
-  --output OUTPUT     Output file path (TSV). Use '-' to write to stdout. 
-                      Defaults to ena_transcriptomics_<tax_id>.tsv
-  --limit LIMIT       Maximum number of records to request in a single API call 
-                      (default: 10000000)
-  --strategy STRATEGY Library strategy value to filter (default: RNA-Seq)
+   -h, --help            show this help message and exit
+   -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
+   -o, --output OUTPUT   Output file path (TSV). Use '-' to write to stdout.
+                                    Defaults to ena_transcriptomics_<tax_id>.tsv
+   -l, --limit LIMIT     Maximum number of records to request in a single API call
+                                    (default: 10000000)
+   -s, --strategy STRATEGY
+                                    Library strategy value to filter (default: RNA-Seq)
+   -L, --log LOG         Log file path (default: logs/enatrieve_tx_<timestamp>.log). Set to '' to disable file logging.
+   -e, --exact           Use exact taxonomy match (tax_eq) instead of tax_tree
 ```
 
 ### Output Format
@@ -92,10 +94,10 @@ enatrieve-tx/
 ├── src/
 │   └── ena/
 │       ├── __init__.py       # Package initialization
-│       └── api.py            # Core library module
+│       ├── api.py            # Core library module
+│       └── cli.py            # CLI implementation (console script entry point)
 ├── logs/                      # Timestamped log files (auto-created)
-├── enatrieve_tx.py           # CLI entry point
-├── requirements.txt          # Python dependencies
+├── pyproject.toml            # Packaging metadata (PEP 621)
 ├── .gitignore                # Git ignore patterns
 └── README.md                 # This file
 ```
