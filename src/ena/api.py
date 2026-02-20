@@ -26,21 +26,22 @@ API_URL = "https://www.ebi.ac.uk/ena/portal/api/search"
 logger = logging.getLogger(__name__)
 
 
-def build_query(tax_id: str, strategy: str) -> str:
+def build_query(tax_id: str, strategy: str, operator: str = "tax_tree") -> str:
     """Return the query string for the given taxonomic id and library strategy.
 
     Args:
         tax_id: NCBI taxonomy identifier.
         strategy: Library strategy value (e.g., "RNA-Seq").
+        operator: Taxonomy operator to use; e.g. "tax_tree" or "tax_eq".
 
     Returns:
         A query string suitable for the ENA Portal API.
     """
-    return f"tax_tree({tax_id}) AND library_strategy=\"{strategy}\""
+    return f"{operator}({tax_id}) AND library_strategy=\"{strategy}\""
 
 
 def build_post_data(
-    tax_id: str, limit: int, strategy: str
+    tax_id: str, limit: int, strategy: str, operator: str = "tax_tree"
 ) -> dict[str, str]:
     """Construct the POST payload for the ENA portal search endpoint.
 
@@ -70,7 +71,7 @@ def build_post_data(
     ]
     return {
         "result": "read_run",
-        "query": build_query(tax_id, strategy),
+        "query": build_query(tax_id, strategy, operator),
         "fields": ",".join(fields),
         "format": "tsv",
         "limit": str(limit),

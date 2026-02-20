@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""CLI for retrieving transcriptomic data from the ENA Portal API by taxonomy ID.
-
-Usage:
-    python enatrieve_tx.py --tax_id 2759
-
-The script queries the ENA Portal API for transcriptomic runs and writes
-results to a TSV file or stdout. The query uses the ``tax_tree()`` operator
-to include subordinate taxa and filters on ``library_strategy="RNA-Seq"``
-by default. Progress is logged to stderr.
-
-Designed for Python 3.10+
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -19,9 +5,6 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-
-# Add src directory to Python path for local imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from ena import (
     build_post_data,
@@ -34,21 +17,22 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments into an argparse.Namespace object.
-
-    Returns:
-        argparse.Namespace: populated with the parsed arguments.
-    """
+    """Parse command-line arguments into an argparse.Namespace object."""
     parser = argparse.ArgumentParser(
         description="Fetch ENA transcriptomic run metadata for a tax_id."
     )
     parser.add_argument(
+        "-t",
+        "--tax-id",
         "--tax_id",
+        dest="tax_id",
         required=True,
         help="NCBI taxonomy identifier to query (string or integer)",
     )
     parser.add_argument(
+        "-o",
         "--output",
+        dest="output",
         default=None,
         help=(
             "Output file path (TSV). Use '-' to write to stdout. "
@@ -56,20 +40,33 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "-l",
         "--limit",
+        dest="limit",
         type=int,
         default=10_000_000,
         help="Maximum number of records to request in a single API call",
     )
     parser.add_argument(
+        "-s",
         "--strategy",
+        dest="strategy",
         default="RNA-Seq",
         help="Library strategy value to filter (default 'RNA-Seq').",
     )
     parser.add_argument(
+        "-L",
         "--log",
+        dest="log",
         default=None,
         help="Log file path (default: logs/enatrieve_tx_<timestamp>.log). Set to '' to disable file logging.",
+    )
+    parser.add_argument(
+        "-e",
+        "--exact",
+        dest="exact",
+        action="store_true",
+        help="Use exact taxonomy match (tax_eq) instead of tax_tree",
     )
 
     return parser.parse_args()
@@ -136,6 +133,7 @@ def main() -> None:
     output = args.output or f"ena_transcriptomics_{tax_id}.tsv"
     limit = args.limit
     strategy = args.strategy
+    operator = "tax_eq" if getattr(args, "exact", False) else "tax_tree"
 
     logger.info("tax_id=%s strategy=%s limit=%d output=%s", tax_id, strategy, limit, output)
 
@@ -153,7 +151,7 @@ def main() -> None:
         # on specifying a very large ``limit`` instead.  We therefore perform a
         # single request and write whatever is returned.  If the API later
         # implements paging we can revisit this loop.
-        data = build_post_data(tax_id, limit, strategy)
+        data = build_post_data(tax_id, limit, strategy, operator)
         resp = fetch_stream(session, data)
 
         lines = write_response(resp, out_fh)
@@ -163,7 +161,3 @@ def main() -> None:
     finally:
         if output != "-":
             out_fh.close()
-
-
-if __name__ == "__main__":
-    main()
