@@ -2,6 +2,9 @@
 
 A Python tool for efficiently querying and downloading transcriptomic sequencing data from the EMBL-EBI ENA Portal API by NCBI taxonomy identifier.
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![python](https://shields.io/badge/python-3.10+-orange)
+
 ## Overview
 
 This project provides a modular Python library and CLI tool for retrieving RNA-Seq metadata from the ENA Portal. It uses the `tax_tree()` operator to automatically include all subordinate taxa, making it easy to fetch comprehensive transcriptomic datasets for entire clades or organism groups.
@@ -21,13 +24,6 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 ## Installation
 
-### Requirements
-
-- Python 3.10 or later
-- pip or equivalent package manager
-
-### Steps
-
 1. Clone or download the repository:
    ```bash
    git clone https://github.com/Cobos-Bioinfo/enatrieve-tx.git
@@ -39,16 +35,14 @@ The tool streams results directly to TSV format, supports both file and stdout o
    pip install -r requirements.txt
    ```
 
-Both `requests` and `urllib3` will be installed with compatible versions.
-
 ## Quick Start
 
 ### Basic Usage
 
-Fetch all RNA-Seq transcriptomic data for taxonomy ID 2759 (Eukaryota):
+Fetch all RNA-Seq transcriptomic data for taxonomy ID 34735 (Apoidea Superfamily):
 
 ```bash
-python enatrieve_tx.py --tax_id 2759
+python enatrieve_tx.py --tax_id 34735
 ```
 
 This creates `ena_transcriptomics_2759.tsv` in the current directory.
