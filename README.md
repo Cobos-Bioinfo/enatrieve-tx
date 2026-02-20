@@ -30,23 +30,14 @@ The tool streams results directly to TSV format, supports both file and stdout o
    cd enatrieve-tx
    ```
 
-2. Install dependencies:
+2. Install the package and its dependencies:
    ```bash
-   pip install -r requirements.txt
+   # development install
+   pip install -e .
+
+   # or a normal install
+   pip install .
    ```
-
-## Quick Start
-*TODO: change section for > actual test.sh scrpit*
-
-### Basic Usage
-
-Fetch all RNA-Seq transcriptomic data for taxonomy ID 34735 (Apoidea Superfamily):
-
-```bash
-python enatrieve_tx.py --tax_id 34735
-```
-
-This creates `ena_transcriptomics_34735.tsv` in the current directory.
 
 ## Usage
 
@@ -119,20 +110,14 @@ The tool uses `urllib3.Retry` with:
 - **Retryable status codes**: 429 (Too Many Requests), 500, 502, 503, 504
 - **HTTP methods**: POST (idempotent for this API)
 
-### Streaming
-
-Response content is streamed line-by-line to minimize memory usage.
-
 ### Pagination
 
 The ENA Portal API does not currently support an explicit `offset` parameter. Instead, results are fetched in a single request using a high `limit` value. The default limit of 10,000,000 covers virtually all result sets from the API.
 
-## Known Limitations
+### Known Limitations
 
 - Very large result sets may timeout; consider filtering by date or other metadata
 - The ENA Portal API may rate-limit requests; built-in retry logic handles transient failures
-
-## Development
 
 ### Version History
 
