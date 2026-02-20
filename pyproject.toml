@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0","wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enatrieve-tx"
+version = "0.1.0"
+description = "ENA transcriptomic data retriever"
+authors = [
+    {name = "Cobos Bioinfo", email = "info@cobos-bioinfo.org"},
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28",
+    "urllib3>=1.26",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Cobos-Bioinfo/enatrieve-tx"
+"Repository" = "https://github.com/Cobos-Bioinfo/enatrieve-tx"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+
+[project.scripts]
+enatrieve-tx = "ena.cli:main"
