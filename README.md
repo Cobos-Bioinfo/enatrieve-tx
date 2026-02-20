@@ -96,7 +96,7 @@ enatrieve-tx/
 │       ├── __init__.py       # Package initialization
 │       ├── api.py            # Core library module
 │       └── cli.py            # CLI implementation (console script entry point)
-├── logs/                      # Timestamped log files (auto-created)
+├── logs/                     # Timestamped log files (auto-created)
 ├── pyproject.toml            # Packaging metadata (PEP 621)
 ├── .gitignore                # Git ignore patterns
 └── README.md                 # This file
