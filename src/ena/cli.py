@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""CLI for retrieving transcriptomic data from the ENA Portal API by taxonomy ID.
-
-Usage:
-    python enatrieve_tx.py --tax_id 2759
-
-The script queries the ENA Portal API for transcriptomic runs and writes
-results to a TSV file or stdout. The query uses the ``tax_tree()`` operator
-to include subordinate taxa and filters on ``library_strategy="RNA-Seq"``
-by default. Progress is logged to stderr.
-
-Designed for Python 3.10+
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -19,9 +5,6 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-
-# Add src directory to Python path for local imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from ena import (
     build_post_data,
@@ -163,7 +146,3 @@ def main() -> None:
     finally:
         if output != "-":
             out_fh.close()
-
-
-if __name__ == "__main__":
-    main()
