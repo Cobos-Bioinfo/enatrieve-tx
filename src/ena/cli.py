@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
         "--log",
         dest="log",
         default=None,
-        help="Log file path (default: logs/enatrieve_tx_<timestamp>.log). Set to '' to disable file logging.",
+        help="Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.",
     )
     parser.add_argument(
         "-e",
@@ -68,17 +68,33 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Use exact taxonomy match (tax_eq) instead of tax_tree",
     )
+    parser.add_argument(
+        "-f",
+        "--format",
+        dest="output_format",
+        choices=["tsv", "json"],
+        default="tsv",
+        help="Output format (default: tsv)",
+    )
 
     return parser.parse_args()
 
 
-def setup_logging(log_file: str | None) -> None:
+def setup_logging(
+    log_file: str | None,
+    tax_id: str | None = None,
+    strategy: str | None = None,
+    exact: bool = False,
+) -> None:
     """Configure logging with both stderr and optional file handler.
 
     Args:
         log_file: Path to log file. If None, creates timestamped log in logs/ directory.
                   If empty string, disables file logging (stderr only).
                   If a path is provided, uses it as-is without timestamps.
+        tax_id: NCBI taxonomy identifier (used in auto-generated log filename).
+        strategy: Library strategy value (used in auto-generated log filename).
+        exact: Whether exact taxonomy match is used (adds _exact suffix to log filename).
     """
     # Configure root logger to capture all levels
     root_logger = logging.getLogger()
@@ -106,7 +122,15 @@ def setup_logging(log_file: str | None) -> None:
         # Generate timestamped filename if log_file is None
         if log_file is None:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            log_path = Path(f"logs/enatrieve_tx_{timestamp}.log")
+            parts = [timestamp]
+            if tax_id:
+                parts.append(tax_id)
+            if strategy:
+                parts.append(strategy)
+            if exact:
+                parts.append("exact")
+            log_filename = "_".join(parts) + ".log"
+            log_path = Path(f"logs/{log_filename}")
         else:
             log_path = Path(log_file)
 
@@ -127,15 +151,22 @@ def main() -> None:
 
     """
     args = parse_args()
-    setup_logging(args.log)
 
     tax_id = args.tax_id
     output = args.output or f"ena_transcriptomics_{tax_id}.tsv"
     limit = args.limit
     strategy = args.strategy
-    operator = "tax_eq" if getattr(args, "exact", False) else "tax_tree"
+    exact = getattr(args, "exact", False)
+    operator = "tax_eq" if exact else "tax_tree"
+    output_format = args.output_format
 
-    logger.info("tax_id=%s strategy=%s limit=%d output=%s", tax_id, strategy, limit, output)
+    setup_logging(args.log, tax_id, strategy, exact)
+
+    logger.info(
+        "tax_id=%s strategy=%s limit=%d format=%s output=%s",
+        tax_id, strategy, limit, output_format, output
+    )
+    logger.info("Using taxonomy operator: %s", operator)
 
     session = create_session()
 
@@ -151,7 +182,9 @@ def main() -> None:
         # on specifying a very large ``limit`` instead.  We therefore perform a
         # single request and write whatever is returned.  If the API later
         # implements paging we can revisit this loop.
-        data = build_post_data(tax_id, limit, strategy, operator)
+        data = build_post_data(tax_id, limit, strategy, operator, output_format)
+        logger.info("Query string: %s", data["query"])
+        logger.info("Requested fields: %s", data["fields"])
         resp = fetch_stream(session, data)
 
         lines = write_response(resp, out_fh)

@@ -44,7 +44,7 @@ The tool streams results directly to TSV format, supports both file and stdout o
 ### Command-Line Interface
 
 ```
-usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e]
+usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e] [-f {tsv,json}]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
@@ -57,13 +57,15 @@ options:
                                     (default: 10000000)
    -s, --strategy STRATEGY
                                     Library strategy value to filter (default: RNA-Seq)
-   -L, --log LOG         Log file path (default: logs/enatrieve_tx_<timestamp>.log). Set to '' to disable file logging.
+   -L, --log LOG         Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
    -e, --exact           Use exact taxonomy match (tax_eq) instead of tax_tree
+   -f, --format {tsv,json}
+                                    Output format (default: tsv)
 ```
 
 ### Output Format
 
-Results are returned as tab-separated values (TSV) with the following columns:
+Results are returned in the requested format (TSV or JSON) with the following fields:
 
 - `run_accession` - Run accession number (e.g., DRR055433)
 - `experiment_title` - Experiment description
@@ -78,11 +80,21 @@ Results are returned as tab-separated values (TSV) with the following columns:
 
 ### Logging
 
-Progress messages are written to stderr and do not interfere with stdout/TSV output:
+Progress messages are written to stderr and do not interfere with stdout/TSV output.
+
+By default, logs are also written to a file in the `logs/` directory with a descriptive name including timestamp, taxonomy ID, and library strategy. For example:
+- `logs/2026-02-24_10-30-15_562_RNA-Seq.log` (using tax_tree)
+- `logs/2026-02-24_10-30-15_562_RNA-Seq_exact.log` (using --exact flag)
+
+Example log output:
 
 ```
-INFO: tax_id=562 strategy=RNA-Seq limit=10000000 output=escherichia_coli_rna.tsv
-INFO: Sending query to ENA API
+INFO: tax_id=562 strategy=RNA-Seq limit=10000000 format=tsv output=escherichia_coli_rna.tsv
+INFO: Using taxonomy operator: tax_tree
+INFO: Query string: tax_tree(562) AND library_strategy="RNA-Seq"
+INFO: Requested fields: run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public
+INFO: Sending POST request to: https://www.ebi.ac.uk/ena/portal/api/search
+INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '10000000'}
 INFO: Wrote 1234 lines
 INFO: Output saved to escherichia_coli_rna.tsv
 ```
