@@ -44,26 +44,27 @@ The tool streams results directly to TSV format, supports both file and stdout o
 ### Command-Line Interface
 
 ```
-usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e]
+usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e] [-f {tsv,json}]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
 options:
    -h, --help            show this help message and exit
    -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
-   -o, --output OUTPUT   Output file path (TSV). Use '-' to write to stdout.
-                                    Defaults to ena_transcriptomics_<tax_id>.tsv
-   -l, --limit LIMIT     Maximum number of records to request in a single API call
-                                    (default: 10000000)
+   -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
+                                    Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
+   -l, --limit LIMIT     Maximum number of records to request (default: 0 = no limit)
    -s, --strategy STRATEGY
                                     Library strategy value to filter (default: RNA-Seq)
-   -L, --log LOG         Log file path (default: logs/enatrieve_tx_<timestamp>.log). Set to '' to disable file logging.
+   -L, --log LOG         Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
    -e, --exact           Use exact taxonomy match (tax_eq) instead of tax_tree
+   -f, --format {tsv,json}
+                                    Output format (default: tsv)
 ```
 
 ### Output Format
 
-Results are returned as tab-separated values (TSV) with the following columns:
+Results are returned in the requested format (TSV or JSON) with the following fields:
 
 - `run_accession` - Run accession number (e.g., DRR055433)
 - `experiment_title` - Experiment description
@@ -78,13 +79,23 @@ Results are returned as tab-separated values (TSV) with the following columns:
 
 ### Logging
 
-Progress messages are written to stderr and do not interfere with stdout/TSV output:
+Progress messages are written to stderr and do not interfere with stdout/TSV output.
+
+By default, logs are also written to a file in the `logs/` directory with a descriptive name including timestamp, taxonomy ID, and library strategy. For example:
+- `logs/2026-02-24_10-30-15_562_RNA-Seq.log` (using tax_tree)
+- `logs/2026-02-24_10-30-15_562_RNA-Seq_exact.log` (using --exact flag)
+
+Example log output:
 
 ```
-INFO: tax_id=562 strategy=RNA-Seq limit=10000000 output=escherichia_coli_rna.tsv
-INFO: Sending query to ENA API
+INFO: tax_id=562 strategy=RNA-Seq limit=0 format=tsv output=enatrieved_562_RNA-Seq.tsv
+INFO: Using taxonomy operator: tax_tree
+INFO: Query string: tax_tree(562) AND library_strategy="RNA-Seq"
+INFO: Requested fields: run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public
+INFO: Sending POST request to: https://www.ebi.ac.uk/ena/portal/api/search
+INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '0'}
 INFO: Wrote 1234 lines
-INFO: Output saved to escherichia_coli_rna.tsv
+INFO: Output saved to enatrieved_562_RNA-Seq.tsv
 ```
 
 ## Project Structure
@@ -114,7 +125,7 @@ The tool uses `urllib3.Retry` with:
 
 ### Pagination
 
-The ENA Portal API does not currently support an explicit `offset` parameter. Instead, results are fetched in a single request using a high `limit` value. The default limit of 10,000,000 covers virtually all result sets from the API.
+The ENA Portal API does not currently support an explicit `offset` parameter. Results are fetched in a single request. The default limit is 0 (no limit), which retrieves all matching records. You can use the `--limit` flag to restrict the number of records if needed.
 
 ### Known Limitations
 

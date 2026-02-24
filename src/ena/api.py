@@ -41,18 +41,25 @@ def build_query(tax_id: str, strategy: str, operator: str = "tax_tree") -> str:
 
 
 def build_post_data(
-    tax_id: str, limit: int, strategy: str, operator: str = "tax_tree"
+    tax_id: str,
+    limit: int,
+    strategy: str,
+    operator: str = "tax_tree",
+    output_format: str = "tsv",
 ) -> dict[str, str]:
     """Construct the POST payload for the ENA portal search endpoint.
 
-    The API does not currently accept an ``offset`` parameter; pagination
-    is achieved by requesting a sufficiently large ``limit``. If the service
-    adds explicit paging in future, this function can be extended.
+    The API does not currently accept an ``offset`` parameter; all matching
+    records are fetched in a single request. The ``limit`` parameter can be
+    set to restrict results (0 means no limit). If the service adds explicit
+    paging in future, this function can be extended.
 
     Args:
         tax_id: NCBI taxonomy identifier.
-        limit: Maximum number of records to request.
+        limit: Maximum number of records to request (0 = no limit).
         strategy: Library strategy value.
+        operator: Taxonomy operator to use ('tax_tree' or 'tax_eq').
+        output_format: Output format ('tsv' or 'json').
 
     Returns:
         A dict suitable for POST body encoding.
@@ -73,7 +80,7 @@ def build_post_data(
         "result": "read_run",
         "query": build_query(tax_id, strategy, operator),
         "fields": ",".join(fields),
-        "format": "tsv",
+        "format": output_format,
         "limit": str(limit),
     }
 
@@ -116,11 +123,12 @@ def fetch_stream(
     Raises:
         requests.RequestException: On network error or HTTP status != 200.
     """
-    logger.info("Sending query to ENA API")
+    logger.info("Sending POST request to: %s", API_URL)
+    logger.info("POST data: %s", data)
     resp = session.post(API_URL, data=data, timeout=30, stream=True)
     try:
         resp.raise_for_status()
-    except requests.HTTPError as exc:
+    except requests.HTTPError as _exc:
         logger.error("HTTP error %s: %s", resp.status_code, resp.text.strip())
         raise
     return resp
