@@ -134,6 +134,7 @@ The ENA Portal API does not currently support an explicit `offset` parameter. Re
 
 ### Version History
 
+- **0.2.0** - Added operator toggle (`-e/--exact`) and short CLI flags; refactored packaging (src layout, console script) and removed top‑level script.
 - **0.1.0** - Initial release with modular library and CLI interface
 
 ## Contributing
