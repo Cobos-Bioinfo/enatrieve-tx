@@ -120,7 +120,7 @@ def fetch_stream(
     resp = session.post(API_URL, data=data, timeout=30, stream=True)
     try:
         resp.raise_for_status()
-    except requests.HTTPError as exc:
+    except requests.HTTPError as _exc:
         logger.error("HTTP error %s: %s", resp.status_code, resp.text.strip())
         raise
     return resp
