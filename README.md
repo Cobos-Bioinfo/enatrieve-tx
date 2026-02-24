@@ -53,8 +53,7 @@ options:
    -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
    -o, --output OUTPUT   Output file path (TSV). Use '-' to write to stdout.
                                     Defaults to ena_transcriptomics_<tax_id>.tsv
-   -l, --limit LIMIT     Maximum number of records to request in a single API call
-                                    (default: 10000000)
+   -l, --limit LIMIT     Maximum number of records to request (default: 0 = no limit)
    -s, --strategy STRATEGY
                                     Library strategy value to filter (default: RNA-Seq)
    -L, --log LOG         Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
@@ -89,12 +88,12 @@ By default, logs are also written to a file in the `logs/` directory with a desc
 Example log output:
 
 ```
-INFO: tax_id=562 strategy=RNA-Seq limit=10000000 format=tsv output=escherichia_coli_rna.tsv
+INFO: tax_id=562 strategy=RNA-Seq limit=0 format=tsv output=escherichia_coli_rna.tsv
 INFO: Using taxonomy operator: tax_tree
 INFO: Query string: tax_tree(562) AND library_strategy="RNA-Seq"
 INFO: Requested fields: run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public
 INFO: Sending POST request to: https://www.ebi.ac.uk/ena/portal/api/search
-INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '10000000'}
+INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '0'}
 INFO: Wrote 1234 lines
 INFO: Output saved to escherichia_coli_rna.tsv
 ```
@@ -126,7 +125,7 @@ The tool uses `urllib3.Retry` with:
 
 ### Pagination
 
-The ENA Portal API does not currently support an explicit `offset` parameter. Instead, results are fetched in a single request using a high `limit` value. The default limit of 10,000,000 covers virtually all result sets from the API.
+The ENA Portal API does not currently support an explicit `offset` parameter. Results are fetched in a single request. The default limit is 0 (no limit), which retrieves all matching records. You can use the `--limit` flag to restrict the number of records if needed.
 
 ### Known Limitations
 

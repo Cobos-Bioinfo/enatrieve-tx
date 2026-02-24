@@ -49,13 +49,14 @@ def build_post_data(
 ) -> dict[str, str]:
     """Construct the POST payload for the ENA portal search endpoint.
 
-    The API does not currently accept an ``offset`` parameter; pagination
-    is achieved by requesting a sufficiently large ``limit``. If the service
-    adds explicit paging in future, this function can be extended.
+    The API does not currently accept an ``offset`` parameter; all matching
+    records are fetched in a single request. The ``limit`` parameter can be
+    set to restrict results (0 means no limit). If the service adds explicit
+    paging in future, this function can be extended.
 
     Args:
         tax_id: NCBI taxonomy identifier.
-        limit: Maximum number of records to request.
+        limit: Maximum number of records to request (0 = no limit).
         strategy: Library strategy value.
         operator: Taxonomy operator to use ('tax_tree' or 'tax_eq').
         output_format: Output format ('tsv' or 'json').

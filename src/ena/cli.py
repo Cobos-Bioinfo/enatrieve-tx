@@ -44,8 +44,8 @@ def parse_args() -> argparse.Namespace:
         "--limit",
         dest="limit",
         type=int,
-        default=10_000_000,
-        help="Maximum number of records to request in a single API call",
+        default=0,
+        help="Maximum number of records to request (default: 0 = no limit)",
     )
     parser.add_argument(
         "-s",
@@ -178,10 +178,9 @@ def main() -> None:
 
     try:
         # The ENA Portal search endpoint does not currently support an
-        # "offset" parameter (requests return 400).  The example usage relies
-        # on specifying a very large ``limit`` instead.  We therefore perform a
-        # single request and write whatever is returned.  If the API later
-        # implements paging we can revisit this loop.
+        # "offset" parameter (requests return 400). All matching records are
+        # fetched in a single request. The default limit is 0 (no limit).
+        # If the API later implements paging we can revisit this approach.
         data = build_post_data(tax_id, limit, strategy, operator, output_format)
         logger.info("Query string: %s", data["query"])
         logger.info("Requested fields: %s", data["fields"])
