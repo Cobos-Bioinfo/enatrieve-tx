@@ -51,8 +51,8 @@ Fetch ENA transcriptomic run metadata for a tax_id.
 options:
    -h, --help            show this help message and exit
    -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
-   -o, --output OUTPUT   Output file path (TSV). Use '-' to write to stdout.
-                                    Defaults to ena_transcriptomics_<tax_id>.tsv
+   -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
+                                    Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
    -l, --limit LIMIT     Maximum number of records to request (default: 0 = no limit)
    -s, --strategy STRATEGY
                                     Library strategy value to filter (default: RNA-Seq)
@@ -88,14 +88,14 @@ By default, logs are also written to a file in the `logs/` directory with a desc
 Example log output:
 
 ```
-INFO: tax_id=562 strategy=RNA-Seq limit=0 format=tsv output=escherichia_coli_rna.tsv
+INFO: tax_id=562 strategy=RNA-Seq limit=0 format=tsv output=enatrieved_562_RNA-Seq.tsv
 INFO: Using taxonomy operator: tax_tree
 INFO: Query string: tax_tree(562) AND library_strategy="RNA-Seq"
 INFO: Requested fields: run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public
 INFO: Sending POST request to: https://www.ebi.ac.uk/ena/portal/api/search
 INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '0'}
 INFO: Wrote 1234 lines
-INFO: Output saved to escherichia_coli_rna.tsv
+INFO: Output saved to enatrieved_562_RNA-Seq.tsv
 ```
 
 ## Project Structure

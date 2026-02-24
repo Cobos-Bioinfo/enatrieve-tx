@@ -35,8 +35,8 @@ def parse_args() -> argparse.Namespace:
         dest="output",
         default=None,
         help=(
-            "Output file path (TSV). Use '-' to write to stdout. "
-            "Defaults to ena_transcriptomics_<tax_id>.tsv"
+            "Output file path (extension auto-added based on --format). Use '-' to write to stdout. "
+            "Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>"
         ),
     )
     parser.add_argument(
@@ -153,12 +153,28 @@ def main() -> None:
     args = parse_args()
 
     tax_id = args.tax_id
-    output = args.output or f"ena_transcriptomics_{tax_id}.tsv"
     limit = args.limit
     strategy = args.strategy
     exact = getattr(args, "exact", False)
     operator = "tax_eq" if exact else "tax_tree"
     output_format = args.output_format
+
+    # Determine file extension based on format
+    extension = "tsv" if output_format == "tsv" else "json"
+
+    # Generate output filename
+    if args.output is None:
+        # Default filename pattern
+        parts = ["enatrieved", tax_id, strategy]
+        if exact:
+            parts.append("exact")
+        output = "_".join(parts) + f".{extension}"
+    elif args.output == "-":
+        # Stdout - no extension needed
+        output = "-"
+    else:
+        # User-specified filename - always add extension
+        output = f"{args.output}.{extension}"
 
     setup_logging(args.log, tax_id, strategy, exact)
 
