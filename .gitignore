@@ -132,6 +132,11 @@ logs/
 # Output files
 ena_transcriptomics_*.tsv
 RNA_seq_ENA.tsv
+*.tsv
+*.json
+
+# Agents
+agents/*
 
 # Context7 docs
 context7-ena-docs.txt
