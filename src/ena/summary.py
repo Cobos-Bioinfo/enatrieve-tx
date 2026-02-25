@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 # Platforms considered Long-Read
 LONG_READ_PLATFORMS = {"OXFORD_NANOPORE", "PACBIO_SMRT"}
 
+# Required columns for summary generation
+REQUIRED_COLUMNS = {"tax_id", "instrument_platform", "read_count"}
+
 
 def generate_summary(file_path: str | Path, output_format: str = "tsv") -> None:
     """
@@ -32,10 +35,10 @@ def generate_summary(file_path: str | Path, output_format: str = "tsv") -> None:
         # Use format parameter from CLI
         if output_format.lower() == "json":
             # ENA portal usually returns a JSON list.
-            df = pd.read_json(path)
+            df = pd.read_json(path, dtype={"tax_id": str})
         else:
-            # Default to TSV
-            df = pd.read_csv(path, sep="\t")
+            # Default to TSV with tax_id explicitly as string
+            df = pd.read_csv(path, sep="\t", dtype={"tax_id": str})
     except Exception as e:
         logger.error("Failed to read output file for summary: %s", e)
         return
@@ -44,20 +47,24 @@ def generate_summary(file_path: str | Path, output_format: str = "tsv") -> None:
         logger.warning("No data retrieved. Summary is empty.")
         return
 
-    # Check required columns. Note: tax_id is sometimes implicitly numeric.
-    # instrument_platform and read_count are strings/numbers.
-    required_cols = ["tax_id", "instrument_platform", "read_count"]
-    missing = [c for c in required_cols if c not in df.columns]
-    if missing:
-        # Depending on exactly what API returns, sometimes columns might be missing if empty?
-        # But we requested them.
-        logger.warning("Missing columns for summary: %s. Skipping summary.", missing)
+    # Validate required columns using set arithmetic
+    missing_cols = REQUIRED_COLUMNS - set(df.columns)
+    if missing_cols:
+        logger.warning("Missing columns for summary: %s. Skipping summary.", missing_cols)
         return
 
-    # Normalize instrument_platform
-    # Convert to string, upper case, handle NaN
-    # Note: NaN in pandas is float, check for data type first or fillna
-    df["instrument_platform"] = df["instrument_platform"].fillna("").astype(str).str.upper()
+    # --- Data Cleaning ---
+    # Ensure numeric read counts
+    df["read_count"] = pd.to_numeric(df["read_count"], errors="coerce").fillna(0)
+
+    # Normalize instrument_platform: upper case, handle NaN, convert to categorical for memory efficiency
+    df["instrument_platform"] = (
+        df["instrument_platform"]
+        .fillna("")
+        .astype(str)
+        .str.upper()
+        .astype("category")
+    )
 
     # Identify Long/Short reads
     df["is_long_read"] = df["instrument_platform"].isin(LONG_READ_PLATFORMS)
@@ -79,13 +86,10 @@ def generate_summary(file_path: str | Path, output_format: str = "tsv") -> None:
     runs_long = df["is_long_read"].sum()
     runs_short = df["is_short_read"].sum()
 
-    # 3. Total Reads
-    # read_count can be numeric or string (if "234234"). Coerce to numeric.
-    df["read_count_numeric"] = pd.to_numeric(df["read_count"], errors='coerce').fillna(0)
-
-    total_reads = df["read_count_numeric"].sum()
-    reads_long = df.loc[df["is_long_read"], "read_count_numeric"].sum()
-    reads_short = df.loc[df["is_short_read"], "read_count_numeric"].sum()
+    # 3. Total Reads (already cleaned to numeric above)
+    total_reads = df["read_count"].sum()
+    reads_long = df.loc[df["is_long_read"], "read_count"].sum()
+    reads_short = df.loc[df["is_short_read"], "read_count"].sum()
 
     # --- Output ---
 
