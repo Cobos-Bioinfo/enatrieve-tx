@@ -10,16 +10,40 @@ from pathlib import Path
 from typing import NoReturn
 
 
+def _style(
+    text: str,
+    *,
+    fg: str | None = None,
+    bold: bool = False,
+) -> str:
+    fg_code = {
+        "red": "31",
+        "green": "32",
+        "yellow": "33",
+        "cyan": "36",
+    }.get(fg or "", "")
+
+    codes: list[str] = []
+    if bold:
+        codes.append("1")
+    if fg_code:
+        codes.append(fg_code)
+    if not codes:
+        return text
+
+    return f"\x1b[{';'.join(codes)}m{text}\x1b[0m"
+
+
 def _header(title: str) -> None:
-    print(f"\n== {title} ==")
+    print("\n" + _style(f"== {title} ==", fg="cyan", bold=True))
 
 
 def _ok(msg: str) -> None:
-    print(f"OK: {msg}")
+    print(_style(f"OK: {msg}", fg="green"))
 
 
 def _fail(msg: str, code: int = 1) -> NoReturn:
-    print(f"FAIL: {msg}", file=sys.stderr)
+    print(_style(f"FAIL: {msg}", fg="red", bold=True), file=sys.stderr)
     raise SystemExit(code)
 
 
@@ -190,7 +214,7 @@ def main() -> None:
     _live_ena_fetch(tax_id, limit)
 
     _header("Result")
-    print("All smoke checks passed.")
+    print(_style("All smoke checks passed.", fg="green", bold=True))
 
 
 if __name__ == "__main__":
