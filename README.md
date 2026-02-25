@@ -40,6 +40,18 @@ The tool streams results directly to TSV format, supports both file and stdout o
    pip install .
    ```
 
+## Smoke test (new clone)
+
+After cloning and installing, you can run a quick smoke test to verify the CLI wiring, imports, and a small ENA fetch work on your machine.
+
+```bash
+python smoke_test.py
+```
+
+Defaults:
+- Uses TaxID **7460** (Apis mellifera — Honey bee)
+- Uses `limit=5` for the live ENA call
+
 ## Usage
 
 ### Command-Line Interface
