@@ -15,6 +15,7 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 - Query ENA Portal API by NCBI taxonomy ID with automatic subordinate taxa inclusion
 - Filter by sequencing strategy (default: RNA-Seq, easily configurable)
+- Generate metadata summaries directly from the CLI (-S/--summary)
 - Stream large result sets with minimal memory overhead
 - Automatic retry handling with exponential backoff for transient failures
 - Output to file or stdout for easy piping integration
@@ -60,6 +61,7 @@ options:
    -e, --exact           Use exact taxonomy match (tax_eq) instead of tax_tree
    -f, --format {tsv,json}
                                     Output format (default: tsv)
+   -S, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
 ```
 
 ### Output Format
