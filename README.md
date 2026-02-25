@@ -44,6 +44,8 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 After cloning and installing, you can run a quick smoke test to verify the CLI wiring, imports, and a small ENA fetch work on your machine.
 
+This smoke test requires network access to the ENA Portal API.
+
 ```bash
 python smoke_test.py
 ```
@@ -116,12 +118,15 @@ INFO: Output saved to enatrieved_562_RNA-Seq.tsv
 
 ```
 enatrieve-tx/
+├── smoke_test.py             # New-clone smoke test (runs a small ENA fetch)
 ├── src/
 │   └── ena/
 │       ├── __init__.py       # Package initialization
 │       ├── api.py            # Core library module
-│       └── cli.py            # CLI implementation (console script entry point)
-├── logs/                     # Timestamped log files (auto-created)
+│       ├── cli.py            # CLI implementation (console script entry point)
+│       └── summary.py        # Summary generation for retrieved metadata
+├── logs/                     # Timestamped log files
+├── LICENSE
 ├── pyproject.toml            # Packaging metadata (PEP 621)
 ├── .gitignore                # Git ignore patterns
 └── README.md                 # This file
@@ -148,6 +153,7 @@ The ENA Portal API does not currently support an explicit `offset` parameter. Re
 
 ### Version History
 
+- **0.3.0** - Added a new-clone smoke test (`smoke_test.py`) and updated documentation.
 - **0.2.0** - Added operator toggle (`-e/--exact`) and short CLI flags; refactored packaging (src layout, console script) and removed top‑level script.
 - **0.1.0** - Initial release with modular library and CLI interface
 
