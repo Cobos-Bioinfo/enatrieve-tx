@@ -15,6 +15,7 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 - Query ENA Portal API by NCBI taxonomy ID with automatic subordinate taxa inclusion
 - Filter by sequencing strategy (default: RNA-Seq, easily configurable)
+- Generate metadata summaries directly from the CLI (-S/--summary)
 - Stream large result sets with minimal memory overhead
 - Automatic retry handling with exponential backoff for transient failures
 - Output to file or stdout for easy piping integration
@@ -39,6 +40,20 @@ The tool streams results directly to TSV format, supports both file and stdout o
    pip install .
    ```
 
+## Smoke test (new clone)
+
+After cloning and installing, you can run a quick smoke test to verify the CLI wiring, imports, and a small ENA fetch work on your machine.
+
+This smoke test requires network access to the ENA Portal API.
+
+```bash
+python smoke_test.py
+```
+
+Defaults:
+- Uses TaxID **7460** (Apis mellifera — Honey bee)
+- Uses `limit=5` for the live ENA call
+
 ## Usage
 
 ### Command-Line Interface
@@ -60,6 +75,7 @@ options:
    -e, --exact           Use exact taxonomy match (tax_eq) instead of tax_tree
    -f, --format {tsv,json}
                                     Output format (default: tsv)
+   -S, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
 ```
 
 ### Output Format
@@ -102,12 +118,15 @@ INFO: Output saved to enatrieved_562_RNA-Seq.tsv
 
 ```
 enatrieve-tx/
+├── smoke_test.py             # New-clone smoke test (runs a small ENA fetch)
 ├── src/
 │   └── ena/
 │       ├── __init__.py       # Package initialization
 │       ├── api.py            # Core library module
-│       └── cli.py            # CLI implementation (console script entry point)
-├── logs/                     # Timestamped log files (auto-created)
+│       ├── cli.py            # CLI implementation (console script entry point)
+│       └── summary.py        # Summary generation for retrieved metadata
+├── logs/                     # Timestamped log files
+├── LICENSE
 ├── pyproject.toml            # Packaging metadata (PEP 621)
 ├── .gitignore                # Git ignore patterns
 └── README.md                 # This file
@@ -134,6 +153,7 @@ The ENA Portal API does not currently support an explicit `offset` parameter. Re
 
 ### Version History
 
+- **0.3.0** - Added a new-clone smoke test (`smoke_test.py`) and updated documentation.
 - **0.2.0** - Added operator toggle (`-e/--exact`) and short CLI flags; refactored packaging (src layout, console script) and removed top‑level script.
 - **0.1.0** - Initial release with modular library and CLI interface
 

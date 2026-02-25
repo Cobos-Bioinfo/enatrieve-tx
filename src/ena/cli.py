@@ -12,6 +12,7 @@ from ena import (
     fetch_stream,
     write_response,
 )
+from ena.summary import generate_summary
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,13 @@ def parse_args() -> argparse.Namespace:
         choices=["tsv", "json"],
         default="tsv",
         help="Output format (default: tsv)",
+    )
+    parser.add_argument(
+        "-S",
+        "--summary",
+        dest="summary",
+        action="store_true",
+        help="Generate a metadata summary table (written to stderr). Not available when output is stdout.",
     )
 
     return parser.parse_args()
@@ -209,3 +217,10 @@ def main() -> None:
     finally:
         if output != "-":
             out_fh.close()
+
+    if args.summary:
+        if output != "-":
+            logger.info("Generating summary statistics...")
+            generate_summary(output, output_format=output_format)
+        else:
+            logger.warning("Summary statistics are not available when outputting to stdout.")
