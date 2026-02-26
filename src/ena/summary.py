@@ -18,6 +18,102 @@ LONG_READ_PLATFORMS = {"OXFORD_NANOPORE", "PACBIO_SMRT"}
 REQUIRED_COLUMNS = {"tax_id", "instrument_platform", "read_count"}
 
 
+def _supports_color() -> bool:
+    """
+    Check if the terminal supports ANSI color codes.
+    
+    Returns:
+        True if colors are supported, False otherwise.
+    """
+    # Check if stderr is a TTY
+    if not hasattr(sys.stderr, "isatty") or not sys.stderr.isatty():
+        return False
+
+    # Check if we're on Windows and not in a modern terminal
+    import platform
+    if platform.system() == "Windows":
+        # Windows Terminal, VSCode terminal, and modern consoles support ANSI
+        # Check for ANSICON, WT_SESSION, or TERM environment variables
+        import os
+        return bool(
+            os.environ.get("ANSICON")
+            or os.environ.get("WT_SESSION")
+            or os.environ.get("TERM")
+        )
+
+    # Unix-like systems typically support colors
+    return True
+
+
+def _colorize(text: str, color: str = "", bold: bool = False) -> str:
+    """
+    Apply ANSI color codes to text if terminal supports it.
+    
+    Args:
+        text: Text to colorize.
+        color: Color name (green, cyan, blue, yellow, red, magenta).
+        bold: Whether to apply bold formatting.
+    
+    Returns:
+        Colorized text if supported, plain text otherwise.
+    """
+    if not _supports_color():
+        return text
+
+    colors = {
+        "green": "32",
+        "cyan": "36",
+        "blue": "34",
+        "yellow": "33",
+        "red": "31",
+        "magenta": "35",
+    }
+
+    codes = []
+    if bold:
+        codes.append("1")
+    if color in colors:
+        codes.append(colors[color])
+
+    if not codes:
+        return text
+
+    return f"\033[{';'.join(codes)}m{text}\033[0m"
+
+
+def _format_number(n: int | float) -> str:
+    """
+    Format a number with commas for thousands separator.
+    
+    Args:
+        n: Number to format.
+    
+    Returns:
+        Formatted number string.
+    """
+    return f"{int(n):,}"
+
+
+def _format_percentage(part: int | float, total: int | float) -> str:
+    """
+    Calculate and format a percentage.
+    
+    Args:
+        part: Partial value.
+        total: Total value.
+    
+    Returns:
+        Formatted percentage string (e.g., "25.5%").
+    """
+    if total == 0:
+        return "0%"
+    pct = (part / total) * 100
+    # Show one decimal if not a whole number, otherwise no decimals
+    if pct == int(pct):
+        return f"{int(pct)}%"
+    return f"{pct:.1f}%"
+
+
 def generate_summary(file_path: str | Path, output_format: str = "tsv") -> None:
     """
     Reads the given output file and prints a metadata summary table to stderr.
@@ -93,29 +189,39 @@ def generate_summary(file_path: str | Path, output_format: str = "tsv") -> None:
 
     # --- Output ---
 
-    # Format numbers with commas
-    def fmt(n):
-        return f"{int(n):,}"
+    # Build summary with enhanced formatting
+    separator = "═" * 50
 
-    summary_text = [
+    summary_lines = [
         "",
-        "-----------------------------",
-        "EnaTrieve-TX Metadata Summary",
-        "-----------------------------",
-        f"Total Unique Organisms: {fmt(unique_organisms)}",
-        f"  - With Long-Read Data: {fmt(unique_with_long)}",
-        f"  - With Short-Read Data: {fmt(unique_with_short)}",
+        _colorize(separator, "cyan"),
+        _colorize("EnaTrieve-TX Metadata Summary", "cyan", bold=True),
+        _colorize(separator, "cyan"),
         "",
-        f"Total Runs: {fmt(total_runs)}",
-        f"  - Long-Read Runs: {fmt(runs_long)}",
-        f"  - Short-Read Runs: {fmt(runs_short)}",
+        _colorize("ORGANISMS", "green", bold=True),
+        f"   Total Unique: {_colorize(_format_number(unique_organisms), 'cyan', bold=True)}",
+        f"   ├─ Short-Read: {_colorize(_format_number(unique_with_short), 'blue')} "
+        f"({_format_percentage(unique_with_short, unique_organisms)})",
+        f"   └─ Long-Read:  {_colorize(_format_number(unique_with_long), 'yellow')} "
+        f"({_format_percentage(unique_with_long, unique_organisms)})",
         "",
-        f"Total Reads: {fmt(total_reads)}",
-        f"  - Long-Read Reads: {fmt(reads_long)}",
-        f"  - Short-Read Reads: {fmt(reads_short)}",
-        "-----------------------------",
+        _colorize("SEQUENCING RUNS", "green", bold=True),
+        f"   Total: {_colorize(_format_number(total_runs), 'cyan', bold=True)}",
+        f"   ├─ Short-Read: {_colorize(_format_number(runs_short), 'blue')} "
+        f"({_format_percentage(runs_short, total_runs)})",
+        f"   └─ Long-Read:  {_colorize(_format_number(runs_long), 'yellow')} "
+        f"({_format_percentage(runs_long, total_runs)})",
+        "",
+        _colorize("TOTAL READS", "green", bold=True),
+        f"   Total: {_colorize(_format_number(total_reads), 'cyan', bold=True)}",
+        f"   ├─ Short-Read: {_colorize(_format_number(reads_short), 'blue')} "
+        f"({_format_percentage(reads_short, total_reads)})",
+        f"   └─ Long-Read:  {_colorize(_format_number(reads_long), 'yellow')} "
+        f"({_format_percentage(reads_long, total_reads)})",
+        "",
+        _colorize(separator, "cyan"),
         ""
     ]
 
     # Print to stderr
-    print("\n".join(summary_text), file=sys.stderr)
+    print("\n".join(summary_lines), file=sys.stderr)
