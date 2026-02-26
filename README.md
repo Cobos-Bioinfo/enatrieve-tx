@@ -52,7 +52,7 @@ python smoke_test.py
 
 Defaults:
 - Uses TaxID **7460** (Apis mellifera — Honey bee)
-- Uses `limit=5` for the live ENA call
+- Uses `max-records=5` for the live ENA call
 
 ## Usage
 
@@ -102,19 +102,6 @@ Progress messages are written to stderr and do not interfere with stdout/TSV out
 By default, logs are also written to a file in the `logs/` directory with a descriptive name including timestamp, taxonomy ID, and library strategy. For example:
 - `logs/2026-02-24_10-30-15_562_RNA-Seq.log` (using tax_tree)
 - `logs/2026-02-24_10-30-15_562_RNA-Seq_exact.log` (using --exact flag)
-
-Example log output:
-
-```
-INFO: tax_id=562 strategy=RNA-Seq limit=0 format=tsv output=enatrieved_562_RNA-Seq.tsv
-INFO: Using taxonomy operator: tax_tree
-INFO: Query string: tax_tree(562) AND library_strategy="RNA-Seq"
-INFO: Requested fields: run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public
-INFO: Sending POST request to: https://www.ebi.ac.uk/ena/portal/api/search
-INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '0'}
-INFO: Wrote 1234 lines
-INFO: Output saved to enatrieved_562_RNA-Seq.tsv
-```
 
 ## Project Structure
 
