@@ -64,20 +64,20 @@ usage: enatrieve-tx [-h] -t TAX_ID [-s LIBRARY_STRATEGY] [-n MAX_RECORDS] [-e] [
 Fetch ENA transcriptomic run metadata for a tax_id.
 
 options:
-   -h, --help            show this help message and exit
-   -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
-   -s, --library-strategy LIBRARY_STRATEGY
-                                    Library strategy value to filter (default: RNA-Seq)
-   -n, --max-records MAX_RECORDS
-                                    Maximum number of records to request (default: 0 = no limit)
-   -e, --exact-match     Use exact taxonomy match (tax_eq) instead of tax_tree
-   -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
-                                    Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
-   -f, --format {tsv,json}
-                                    Output format (default: tsv)
-   -m, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
-   -l, --log-file LOG_FILE
-                                    Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
+  -h, --help            show this help message and exit
+  -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
+  -s, --library-strategy LIBRARY_STRATEGY
+                        Library strategy value to filter (default: RNA-Seq)
+  -n, --max-records MAX_RECORDS
+                        Maximum number of records to request (default: 0 = no limit)
+  -e, --exact-match     Use exact taxonomy match (tax_eq) instead of tax_tree
+  -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
+                        Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
+  -f, --format {tsv,json}
+                        Output format (default: tsv)
+  -m, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
+  -l, --log-file LOG_FILE
+                        Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
 ```
 
 ### Output Format
