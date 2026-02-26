@@ -15,7 +15,7 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 - Query ENA Portal API by NCBI taxonomy ID with automatic subordinate taxa inclusion
 - Filter by sequencing strategy (default: RNA-Seq, easily configurable)
-- Generate metadata summaries directly from the CLI (-S/--summary)
+- Generate metadata summaries directly from the CLI (-m/--summary)
 - Stream large result sets with minimal memory overhead
 - Automatic retry handling with exponential backoff for transient failures
 - Output to file or stdout for easy piping integration
@@ -52,30 +52,32 @@ python smoke_test.py
 
 Defaults:
 - Uses TaxID **7460** (Apis mellifera — Honey bee)
-- Uses `limit=5` for the live ENA call
+- Uses `max-records=5` for the live ENA call
 
 ## Usage
 
 ### Command-Line Interface
 
 ```
-usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e] [-f {tsv,json}]
+usage: enatrieve-tx [-h] -t TAX_ID [-s LIBRARY_STRATEGY] [-n MAX_RECORDS] [-e] [-o OUTPUT] [-f {tsv,json}] [-m] [-l LOG_FILE]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
 options:
-   -h, --help            show this help message and exit
-   -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
-   -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
-                                    Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
-   -l, --limit LIMIT     Maximum number of records to request (default: 0 = no limit)
-   -s, --strategy STRATEGY
-                                    Library strategy value to filter (default: RNA-Seq)
-   -L, --log LOG         Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
-   -e, --exact           Use exact taxonomy match (tax_eq) instead of tax_tree
-   -f, --format {tsv,json}
-                                    Output format (default: tsv)
-   -S, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
+  -h, --help            show this help message and exit
+  -t, --tax-id TAX_ID   NCBI taxonomy identifier to query (string or integer) [required]
+  -s, --library-strategy LIBRARY_STRATEGY
+                        Library strategy value to filter (default: RNA-Seq)
+  -n, --max-records MAX_RECORDS
+                        Maximum number of records to request (default: 0 = no limit)
+  -e, --exact-match     Use exact taxonomy match (tax_eq) instead of tax_tree
+  -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
+                        Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
+  -f, --format {tsv,json}
+                        Output format (default: tsv)
+  -m, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
+  -l, --log-file LOG_FILE
+                        Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
 ```
 
 ### Output Format
@@ -100,19 +102,6 @@ Progress messages are written to stderr and do not interfere with stdout/TSV out
 By default, logs are also written to a file in the `logs/` directory with a descriptive name including timestamp, taxonomy ID, and library strategy. For example:
 - `logs/2026-02-24_10-30-15_562_RNA-Seq.log` (using tax_tree)
 - `logs/2026-02-24_10-30-15_562_RNA-Seq_exact.log` (using --exact flag)
-
-Example log output:
-
-```
-INFO: tax_id=562 strategy=RNA-Seq limit=0 format=tsv output=enatrieved_562_RNA-Seq.tsv
-INFO: Using taxonomy operator: tax_tree
-INFO: Query string: tax_tree(562) AND library_strategy="RNA-Seq"
-INFO: Requested fields: run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public
-INFO: Sending POST request to: https://www.ebi.ac.uk/ena/portal/api/search
-INFO: POST data: {'result': 'read_run', 'query': 'tax_tree(562) AND library_strategy="RNA-Seq"', 'fields': 'run_accession,experiment_title,tax_id,tax_lineage,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public', 'format': 'tsv', 'limit': '0'}
-INFO: Wrote 1234 lines
-INFO: Output saved to enatrieved_562_RNA-Seq.tsv
-```
 
 ## Project Structure
 
@@ -144,7 +133,7 @@ The tool uses `urllib3.Retry` with:
 
 ### Pagination
 
-The ENA Portal API does not currently support an explicit `offset` parameter. Results are fetched in a single request. The default limit is 0 (no limit), which retrieves all matching records. You can use the `--limit` flag to restrict the number of records if needed.
+The ENA Portal API does not currently support an explicit `offset` parameter. Results are fetched in a single request. The default max_records is 0 (no limit), which retrieves all matching records. You can use the `--max-records` flag to restrict the number of records if needed.
 
 ### Known Limitations
 
@@ -153,8 +142,8 @@ The ENA Portal API does not currently support an explicit `offset` parameter. Re
 
 ### Version History
 
-- **0.3.0** - Added a new-clone smoke test (`smoke_test.py`), metadata summary option (`-S/--summary`) and updated documentation.
-- **0.2.0** - Added operator toggle (`-e/--exact`) and short CLI flags; refactored packaging (src layout, console script) and removed top‑level script.
+- **0.3.0** - Added a new-clone smoke test (`smoke_test.py`), metadata summary option (`-m/--summary`) and updated documentation.
+- **0.2.0** - Added operator toggle (`-e/--exact-match`) and short CLI flags; refactored packaging (src layout, console script) and removed top‑level script.
 - **0.1.0** - Initial release with modular library and CLI interface
 
 ## Contributing

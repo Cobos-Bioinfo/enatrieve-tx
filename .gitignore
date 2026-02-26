@@ -133,6 +133,7 @@ logs/
 ena_transcriptomics_*.tsv
 RNA_seq_ENA.tsv
 *.tsv
+*.csv
 *.json
 
 # Agents
