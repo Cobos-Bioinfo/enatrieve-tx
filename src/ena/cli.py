@@ -22,14 +22,41 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Fetch ENA transcriptomic run metadata for a tax_id."
     )
+
+    # Required Input
     parser.add_argument(
         "-t",
         "--tax-id",
-        "--tax_id",
         dest="tax_id",
         required=True,
         help="NCBI taxonomy identifier to query (string or integer)",
     )
+
+    # Query Parameters
+    parser.add_argument(
+        "-s",
+        "--library-strategy",
+        dest="strategy",
+        default="RNA-Seq",
+        help="Library strategy value to filter (default 'RNA-Seq').",
+    )
+    parser.add_argument(
+        "-n",
+        "--max-records",
+        dest="max_records",
+        type=int,
+        default=0,
+        help="Maximum number of records to request (default: 0 = no limit)",
+    )
+    parser.add_argument(
+        "-e",
+        "--exact-match",
+        dest="exact",
+        action="store_true",
+        help="Use exact taxonomy match (tax_eq) instead of tax_tree",
+    )
+
+    # Output Control
     parser.add_argument(
         "-o",
         "--output",
@@ -41,35 +68,6 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "-l",
-        "--limit",
-        dest="limit",
-        type=int,
-        default=0,
-        help="Maximum number of records to request (default: 0 = no limit)",
-    )
-    parser.add_argument(
-        "-s",
-        "--strategy",
-        dest="strategy",
-        default="RNA-Seq",
-        help="Library strategy value to filter (default 'RNA-Seq').",
-    )
-    parser.add_argument(
-        "-L",
-        "--log",
-        dest="log",
-        default=None,
-        help="Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.",
-    )
-    parser.add_argument(
-        "-e",
-        "--exact",
-        dest="exact",
-        action="store_true",
-        help="Use exact taxonomy match (tax_eq) instead of tax_tree",
-    )
-    parser.add_argument(
         "-f",
         "--format",
         dest="output_format",
@@ -78,11 +76,20 @@ def parse_args() -> argparse.Namespace:
         help="Output format (default: tsv)",
     )
     parser.add_argument(
-        "-S",
+        "-m",
         "--summary",
         dest="summary",
         action="store_true",
         help="Generate a metadata summary table (written to stderr). Not available when output is stdout.",
+    )
+
+    # Logging
+    parser.add_argument(
+        "-l",
+        "--log-file",
+        dest="log_file",
+        default=None,
+        help="Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.",
     )
 
     return parser.parse_args()
@@ -161,7 +168,7 @@ def main() -> None:
     args = parse_args()
 
     tax_id = args.tax_id
-    limit = args.limit
+    max_records = args.max_records
     strategy = args.strategy
     exact = getattr(args, "exact", False)
     operator = "tax_eq" if exact else "tax_tree"
@@ -184,11 +191,11 @@ def main() -> None:
         # User-specified filename - always add extension
         output = f"{args.output}.{extension}"
 
-    setup_logging(args.log, tax_id, strategy, exact)
+    setup_logging(args.log_file, tax_id, strategy, exact)
 
     logger.info(
-        "tax_id=%s strategy=%s limit=%d format=%s output=%s",
-        tax_id, strategy, limit, output_format, output
+        "tax_id=%s strategy=%s max_records=%d format=%s output=%s",
+        tax_id, strategy, max_records, output_format, output
     )
     logger.info("Using taxonomy operator: %s", operator)
 
@@ -203,9 +210,9 @@ def main() -> None:
     try:
         # The ENA Portal search endpoint does not currently support an
         # "offset" parameter (requests return 400). All matching records are
-        # fetched in a single request. The default limit is 0 (no limit).
+        # fetched in a single request. The default max_records is 0 (no limit).
         # If the API later implements paging we can revisit this approach.
-        data = build_post_data(tax_id, limit, strategy, operator, output_format)
+        data = build_post_data(tax_id, max_records, strategy, operator, output_format)
         logger.info("Query string: %s", data["query"])
         logger.info("Requested fields: %s", data["fields"])
         resp = fetch_stream(session, data)
