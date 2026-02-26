@@ -59,7 +59,7 @@ Defaults:
 ### Command-Line Interface
 
 ```
-usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e] [-f {tsv,json}]
+usage: enatrieve-tx [-h] -t TAX_ID [-o OUTPUT] [-l LIMIT] [-s STRATEGY] [-L LOG] [-e] [-f {tsv,json}] [-S]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
