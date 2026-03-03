@@ -15,9 +15,8 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 - Query ENA Portal API by NCBI taxonomy ID with automatic subordinate taxa inclusion
 - Filter by sequencing strategy (default: RNA-Seq, easily configurable)
-- **Customize output fields** to retrieve only the data you need
-- **Discover available fields** with the `--list-fields` option
-- Generate metadata summaries directly from the CLI (-m/--summary)
+- Customize output fields to retrieve only the data you need
+- Generate metadata summaries directly from the CLI
 - Stream large result sets with minimal memory overhead
 - Automatic retry handling with exponential backoff for transient failures
 - Output to file or stdout for easy piping integration
@@ -101,77 +100,33 @@ By default, `enatrieve-tx` retrieves a minimal set of fields to keep output comp
 
 **Note:** The ENA API always includes `run_accession` in responses, regardless of requested fields.
 
-#### Field Presets
+#### Field Customization
 
-For convenience, `enatrieve-tx` provides built-in field presets that are included with the package:
+**Built-in Presets:**
 
-**Built-in Presets:** (no configuration needed)
+For convenience, `enatrieve-tx` includes two built-in field presets:
 
 - **`minimal`** (default) - 4 fields: `run_accession`, `experiment_title`, `tax_id`, `scientific_name`
-- **`standard`** - 10 fields: `run_accession`, `experiment_title`, `tax_id`, `tax_lineage`, `scientific_name`, `library_source`, `library_strategy`, `instrument_platform`, `read_count`, `first_public`
+- **`standard`** - 10 fields: includes the above plus `tax_lineage`, `library_source`, `library_strategy`, `instrument_platform`, `read_count`, `first_public`
 
 ```bash
 # Use standard preset for comprehensive metadata
 enatrieve-tx -t 7460 --fields-preset standard -n 100 -o honeybee
+```
 
-# Use minimal preset explicitly (same as default)
-enatrieve-tx -t 7460 --fields-preset minimal -n 100 -o honeybee
+**Custom Fields:**
+
+Specify exactly which fields you need:
+
+```bash
+enatrieve-tx -t 7460 --fields run_accession,tax_id,instrument_platform,read_count -n 100 -o honeybee_custom
 ```
 
 **Custom Presets:**
 
-You can define your own presets in a JSON configuration file to extend beyond the built-in presets. Create either:
-- **Project config**: `.enatrieve-tx.json` in your project directory (takes precedence)
-- **User config**: `~/.config/enatrieve-tx/presets.json` in your home directory
+Define your own reusable presets in `~/.config/enatrieve-tx/presets.json` or `.enatrieve-tx.json` (project-level).
 
-**Note:** Built-in presets (`minimal` and `standard`) are bundled with the package in `src/ena/data/presets.json` and require no configuration.
-
-**Example config file:**
-
-```json
-{
-  "mypreset": {
-    "description": "My custom field selection",
-    "fields": [
-      "run_accession",
-      "tax_id",
-      "instrument_platform",
-      "read_count",
-      "sample_accession"
-    ]
-  },
-  "assembly": {
-    "description": "Assembly quality fields",
-    "fields": [
-      "run_accession",
-      "assembly_quality",
-      "assembly_software",
-      "completeness_score",
-      "contamination_score"
-    ]
-  }
-}
-```
-
-Then use your custom preset:
-
-```bash
-enatrieve-tx -t 7460 --fields-preset mypreset -n 100 -o honeybee
-```
-
-#### Customizing Fields
-
-You can customize which fields to retrieve using the `--fields` option:
-
-```bash
-# Request specific fields
-enatrieve-tx -t 7460 --fields run_accession,tax_id,instrument_platform,read_count -n 100 -o honeybee_minimal
-
-# Request many fields for comprehensive data
-enatrieve-tx -t 7460 --fields run_accession,experiment_title,tax_id,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public -n 100 -o honeybee_standard
-```
-
-#### Discovering Available Fields
+**Discovering Available Fields:**
 
 To see all available ENA Portal API fields for the `read_run` result type:
 
@@ -223,7 +178,10 @@ enatrieve-tx/
 │       ├── __init__.py       # Package initialization
 │       ├── api.py            # Core library module
 │       ├── cli.py            # CLI implementation (console script entry point)
-│       └── summary.py        # Summary generation for retrieved metadata
+│       ├── summary.py        # Summary generation for retrieved metadata
+│       └── data/
+│           ├── ena_fields.txt    # All 195 available ENA fields
+│           └── presets.json      # Built-in field presets
 ├── logs/                     # Timestamped log files
 ├── LICENSE
 ├── pyproject.toml            # Packaging metadata (PEP 621)
