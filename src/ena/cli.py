@@ -12,9 +12,56 @@ from ena import (
     fetch_stream,
     write_response,
 )
-from ena.summary import generate_summary
+from ena.summary import generate_summary, REQUIRED_COLUMNS
 
 logger = logging.getLogger(__name__)
+
+
+def load_available_fields() -> list[str]:
+    """Load the list of available ENA fields from the bundled data file.
+    
+    Returns:
+        List of available field names.
+        
+    Raises:
+        FileNotFoundError: If the fields file cannot be found.
+    """
+    # Try to find the fields file in the package data directory
+    fields_file = Path(__file__).parent / "data" / "ena_fields.txt"
+    
+    if not fields_file.exists():
+        raise FileNotFoundError(
+            f"Fields reference file not found at {fields_file}. "
+            "This file should be bundled with the package."
+        )
+    
+    fields = []
+    with open(fields_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # Skip empty lines and comments
+            if line and not line.startswith("#"):
+                fields.append(line)
+    
+    return fields
+
+
+def display_available_fields() -> None:
+    """Display all available ENA Portal API fields to stdout and exit."""
+    try:
+        fields = load_available_fields()
+        print("Available ENA Portal API fields for read_run result type:")
+        print("=" * 60)
+        for field in fields:
+            print(field)
+        print("=" * 60)
+        print(f"Total: {len(fields)} fields available")
+        print()
+        print("Usage: enatrieve-tx --fields run_accession,tax_id,read_count ...")
+        print("Note: The ENA API always includes 'run_accession' in the response")
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,8 +92,8 @@ def parse_args() -> argparse.Namespace:
         "--max-records",
         dest="max_records",
         type=int,
-        default=0,
-        help="Maximum number of records to request (default: 0 = no limit)",
+        default=10000,
+        help="Maximum number of records to request (default: 10000; use 0 for all results / no limit)",
     )
     parser.add_argument(
         "-e",
@@ -90,6 +137,21 @@ def parse_args() -> argparse.Namespace:
         dest="log_file",
         default=None,
         help="Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.",
+    )
+
+    # Field Customization
+    parser.add_argument(
+        "--fields",
+        dest="fields",
+        default=None,
+        help="Comma-separated list of field names to retrieve (e.g., 'run_accession,tax_id,read_count'). "
+             "If not specified, uses default minimal fields. Note: ENA API always includes 'run_accession'.",
+    )
+    parser.add_argument(
+        "--list-fields",
+        dest="list_fields",
+        action="store_true",
+        help="Display all available ENA fields and exit. Cannot be used with other options.",
     )
 
     return parser.parse_args()
@@ -165,6 +227,11 @@ def main() -> None:
     to stderr and optionally to a log file.
 
     """
+    # Handle --list-fields before arg parsing (standalone operation)
+    if "--list-fields" in sys.argv:
+        display_available_fields()
+        sys.exit(0)
+    
     args = parse_args()
 
     tax_id = args.tax_id
@@ -173,6 +240,21 @@ def main() -> None:
     exact = getattr(args, "exact", False)
     operator = "tax_eq" if exact else "tax_tree"
     output_format = args.output_format
+
+    # Parse user-provided fields
+    user_fields = None
+    if args.fields:
+        user_fields = [f.strip() for f in args.fields.split(",") if f.strip()]
+    
+    # Auto-add summary-required fields if summary is requested
+    if args.summary and user_fields is not None:
+        missing_fields = REQUIRED_COLUMNS - set(user_fields)
+        if missing_fields:
+            logger.warning(
+                "Adding required fields for summary generation: %s",
+                ", ".join(sorted(missing_fields))
+            )
+            user_fields.extend(sorted(missing_fields))
 
     # Determine file extension based on format
     extension = "tsv" if output_format == "tsv" else "json"
@@ -212,7 +294,9 @@ def main() -> None:
         # "offset" parameter (requests return 400). All matching records are
         # fetched in a single request. The default max_records is 0 (no limit).
         # If the API later implements paging we can revisit this approach.
-        data = build_post_data(tax_id, max_records, strategy, operator, output_format)
+        data = build_post_data(
+            tax_id, max_records, strategy, operator, output_format, fields=user_fields
+        )
         logger.info("Query string: %s", data["query"])
         logger.info("Requested fields: %s", data["fields"])
         resp = fetch_stream(session, data)

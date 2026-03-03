@@ -24,6 +24,9 @@ dependencies = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+ena = ["data/*.txt"]
+
 
 [project.scripts]
 enatrieve-tx = "ena.cli:main"

@@ -15,6 +15,8 @@ The tool streams results directly to TSV format, supports both file and stdout o
 
 - Query ENA Portal API by NCBI taxonomy ID with automatic subordinate taxa inclusion
 - Filter by sequencing strategy (default: RNA-Seq, easily configurable)
+- **Customize output fields** to retrieve only the data you need
+- **Discover available fields** with the `--list-fields` option
 - Generate metadata summaries directly from the CLI (-m/--summary)
 - Stream large result sets with minimal memory overhead
 - Automatic retry handling with exponential backoff for transient failures
@@ -59,7 +61,7 @@ Defaults:
 ### Command-Line Interface
 
 ```
-usage: enatrieve-tx [-h] -t TAX_ID [-s LIBRARY_STRATEGY] [-n MAX_RECORDS] [-e] [-o OUTPUT] [-f {tsv,json}] [-m] [-l LOG_FILE]
+usage: enatrieve-tx [-h] -t TAX_ID [-s LIBRARY_STRATEGY] [-n MAX_RECORDS] [-e] [-o OUTPUT] [-f {tsv,json}] [-m] [-l LOG_FILE] [--fields FIELDS] [--list-fields]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
@@ -69,7 +71,7 @@ options:
   -s, --library-strategy LIBRARY_STRATEGY
                         Library strategy value to filter (default: RNA-Seq)
   -n, --max-records MAX_RECORDS
-                        Maximum number of records to request (default: 0 = no limit)
+                        Maximum number of records to request (default: 10000; use 0 for all results / no limit)
   -e, --exact-match     Use exact taxonomy match (tax_eq) instead of tax_tree
   -o, --output OUTPUT   Output file path (extension auto-added based on --format). Use '-' to write to stdout.
                         Defaults to enatrieved_<tax_id>_<strategy>[_exact].<format>
@@ -78,22 +80,69 @@ options:
   -m, --summary         Generate a metadata summary table (written to stderr). Not available when output is stdout.
   -l, --log-file LOG_FILE
                         Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
+  --fields FIELDS       Comma-separated list of field names to retrieve (e.g., 'run_accession,tax_id,read_count').
+                        If not specified, uses default minimal fields. Note: ENA API always includes 'run_accession'.
+  --list-fields         Display all available ENA fields and exit. Cannot be used with other options.
 ```
 
 ### Output Format
 
-Results are returned in the requested format (TSV or JSON) with the following fields:
+#### Default Fields
+
+By default, `enatrieve-tx` retrieves a minimal set of fields to keep output compact:
 
 - `run_accession` - Run accession number (e.g., DRR055433)
 - `experiment_title` - Experiment description
 - `tax_id` - NCBI taxonomy ID
-- `tax_lineage` - Full taxonomic lineage (semicolon-separated)
 - `scientific_name` - Organism scientific name
-- `library_source` - Library source material type
-- `library_strategy` - Sequencing strategy (RNA-Seq, miRNA-Seq, etc.)
-- `instrument_platform` - Sequencing platform (ILLUMINA, PACBIO, etc.)
-- `read_count` - Total number of reads in the run
-- `first_public` - Date first made public
+
+**Note:** The ENA API always includes `run_accession` in responses, regardless of requested fields.
+
+#### Customizing Fields
+
+You can customize which fields to retrieve using the `--fields` option:
+
+```bash
+# Request specific fields
+enatrieve-tx -t 562 --fields run_accession,tax_id,instrument_platform,read_count -o ecoli_minimal
+
+# Request many fields for comprehensive data
+enatrieve-tx -t 562 --fields run_accession,experiment_title,tax_id,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public -o ecoli_full
+```
+
+#### Discovering Available Fields
+
+To see all available ENA Portal API fields for the `read_run` result type:
+
+```bash
+enatrieve-tx --list-fields
+```
+
+This displays the complete list of fields you can request. The list is cached within the package for quick reference.
+
+For the most up-to-date field definitions, consult the [ENA Portal API documentation](https://www.ebi.ac.uk/ena/portal/api/searchFields?result=read_run).
+
+#### Summary Requirements
+
+When using the `--summary` option, the following fields are **required** for summary generation:
+
+- `tax_id` — For counting unique organisms
+- `instrument_platform` — For categorizing long-read vs short-read platforms  
+- `read_count` — For calculating total reads
+
+If you specify custom fields with `--fields` and also use `--summary`, any missing required fields will be **automatically added** with a warning message.
+
+**Example:**
+
+```bash
+# This command will auto-add instrument_platform and read_count
+enatrieve-tx -t 562 --fields run_accession,experiment_title,tax_id --summary -o ecoli
+```
+
+Output:
+```
+WARNING: Adding required fields for summary generation: instrument_platform, read_count
+```
 
 ### Logging
 
@@ -133,7 +182,17 @@ The tool uses `urllib3.Retry` with:
 
 ### Pagination
 
-The ENA Portal API does not currently support an explicit `offset` parameter. Results are fetched in a single request. The default max_records is 0 (no limit), which retrieves all matching records. You can use the `--max-records` flag to restrict the number of records if needed.
+The ENA Portal API does not currently support an explicit `offset` parameter. Results are fetched in a single request. 
+
+The default `--max-records` is **10000**. To retrieve all matching records without limit, use `--max-records 0`:
+
+```bash
+# Retrieve all results (no limit)
+enatrieve-tx -t 562 --max-records 0 -o ecoli_all
+
+# Retrieve only first 100 records
+enatrieve-tx -t 562 --max-records 100 -o ecoli_sample
+```
 
 ### Known Limitations
 

@@ -25,6 +25,14 @@ API_URL = "https://www.ebi.ac.uk/ena/portal/api/search"
 
 logger = logging.getLogger(__name__)
 
+# Default fields returned when user does not specify custom fields
+DEFAULT_FIELDS = [
+    "run_accession",
+    "experiment_title",
+    "tax_id",
+    "scientific_name",
+]
+
 
 def build_query(tax_id: str, strategy: str, operator: str = "tax_tree") -> str:
     """Return the query string for the given taxonomic id and library strategy.
@@ -46,6 +54,7 @@ def build_post_data(
     strategy: str,
     operator: str = "tax_tree",
     output_format: str = "tsv",
+    fields: list[str] | None = None,
 ) -> dict[str, str]:
     """Construct the POST payload for the ENA portal search endpoint.
 
@@ -60,22 +69,14 @@ def build_post_data(
         strategy: Library strategy value.
         operator: Taxonomy operator to use ('tax_tree' or 'tax_eq').
         output_format: Output format ('tsv' or 'json').
+        fields: Optional list of field names to retrieve. If None, uses DEFAULT_FIELDS.
+                The ENA API always includes run_accession in the response.
 
     Returns:
         A dict suitable for POST body encoding.
     """
-    fields = [
-        "run_accession",
-        "experiment_title",
-        "tax_id",
-        "tax_lineage",
-        "scientific_name",
-        "library_source",
-        "library_strategy",
-        "instrument_platform",
-        "read_count",
-        "first_public",
-    ]
+    if fields is None:
+        fields = DEFAULT_FIELDS.copy()
     return {
         "result": "read_run",
         "query": build_query(tax_id, strategy, operator),

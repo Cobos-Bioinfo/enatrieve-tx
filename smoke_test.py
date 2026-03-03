@@ -132,22 +132,19 @@ def _check_query_building(tax_id: str) -> None:
 def _live_ena_fetch(tax_id: str, limit: int) -> None:
     _header("Live ENA fetch")
 
-    from ena.api import build_post_data, create_session, fetch_stream, write_response
+    from ena.api import build_post_data, create_session, fetch_stream, write_response, DEFAULT_FIELDS
     from ena.summary import generate_summary
     import requests
 
-    expected_cols = {
-        "run_accession",
-        "experiment_title",
-        "tax_id",
-        "tax_lineage",
-        "scientific_name",
-        "library_source",
-        "library_strategy",
-        "instrument_platform",
-        "read_count",
-        "first_public",
-    }
+    # For the smoke test, we need to test both:
+    # 1. Basic field retrieval with defaults
+    # 2. Summary generation (requires tax_id, instrument_platform, read_count)
+    # So we'll use a custom field list that includes summary-required fields
+    smoke_test_fields = list(DEFAULT_FIELDS) + ["instrument_platform", "read_count"]
+    # Remove duplicates (tax_id is in both DEFAULT_FIELDS and REQUIRED_COLUMNS)
+    smoke_test_fields = list(dict.fromkeys(smoke_test_fields))
+    
+    expected_cols = set(smoke_test_fields)
 
     session = create_session()
 
@@ -161,6 +158,7 @@ def _live_ena_fetch(tax_id: str, limit: int) -> None:
             strategy="RNA-Seq",
             operator="tax_tree",
             output_format="tsv",
+            fields=smoke_test_fields,
         )
         try:
             resp = fetch_stream(session, data)
@@ -191,6 +189,7 @@ def _live_ena_fetch(tax_id: str, limit: int) -> None:
             strategy="RNA-Seq",
             operator="tax_tree",
             output_format="json",
+            fields=smoke_test_fields,
         )
         resp_json = fetch_stream(session, data_json)
         with out_json.open("w", encoding="utf-8") as fh:
