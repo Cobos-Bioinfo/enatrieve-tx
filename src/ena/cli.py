@@ -291,6 +291,61 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+class ColoredFormatter(logging.Formatter):
+    """Custom formatter that adds colors to log level names in terminal output."""
+
+    # ANSI color codes
+    COLORS = {
+        "ERROR": "\033[31m",    # Red
+        "WARNING": "\033[33m",  # Yellow
+        "INFO": "\033[36m",     # Cyan
+    }
+    RESET = "\033[0m"
+
+    def __init__(self, fmt: str | None = None, datefmt: str | None = None):
+        """Initialize the formatter and check if terminal supports colors.
+
+        Args:
+            fmt: Format string for log messages.
+            datefmt: Format string for date/time.
+        """
+        super().__init__(fmt, datefmt)
+        self.use_colors = self._supports_color()
+
+    def _supports_color(self) -> bool:
+        """Check if stderr supports ANSI color codes.
+
+        Returns:
+            True if colors are supported, False otherwise.
+        """
+        return hasattr(sys.stderr, "isatty") and sys.stderr.isatty()
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the log record with colored level name if supported.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            Formatted log message with colors if terminal supports it.
+        """
+        # Apply color to level name only
+        if self.use_colors and record.levelname in self.COLORS:
+            # Store original levelname
+            original_levelname = record.levelname
+            # Temporarily replace with colored version
+            record.levelname = (
+                f"{self.COLORS[record.levelname]}{record.levelname}{self.RESET}"
+            )
+            # Format the message
+            result = super().format(record)
+            # Restore original levelname
+            record.levelname = original_levelname
+            return result
+        else:
+            return super().format(record)
+
+
 def setup_logging(
     log_file: str | None,
     tax_id: str | None = None,
@@ -315,16 +370,16 @@ def setup_logging(
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Formatter for all handlers
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    # Formatter for file handler (plain text with timestamps)
+    file_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - [%(levelname)s] - %(message)s"
     )
 
-    # Stderr handler (always enabled)
+    # Stderr handler (always enabled, with colors)
     stderr_handler = logging.StreamHandler(sys.stderr)
     stderr_handler.setLevel(logging.INFO)
     stderr_handler.setFormatter(
-        logging.Formatter("%(levelname)s: %(message)s")
+        ColoredFormatter("[%(levelname)s] - %(message)s")
     )
     root_logger.addHandler(stderr_handler)
 
@@ -348,7 +403,7 @@ def setup_logging(
         log_path.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_path, mode="w")
         file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(file_formatter)
         root_logger.addHandler(file_handler)
         logger.info("Logging to file: %s", log_path.absolute())
 

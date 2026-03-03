@@ -25,24 +25,7 @@ def _supports_color() -> bool:
     Returns:
         True if colors are supported, False otherwise.
     """
-    # Check if stderr is a TTY
-    if not hasattr(sys.stderr, "isatty") or not sys.stderr.isatty():
-        return False
-
-    # Check if we're on Windows and not in a modern terminal
-    import platform
-    if platform.system() == "Windows":
-        # Windows Terminal, VSCode terminal, and modern consoles support ANSI
-        # Check for ANSICON, WT_SESSION, or TERM environment variables
-        import os
-        return bool(
-            os.environ.get("ANSICON")
-            or os.environ.get("WT_SESSION")
-            or os.environ.get("TERM")
-        )
-
-    # Unix-like systems typically support colors
-    return True
+    return hasattr(sys.stderr, "isatty") and sys.stderr.isatty()
 
 
 def _colorize(text: str, color: str = "", bold: bool = False) -> str:
