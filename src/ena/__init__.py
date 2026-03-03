@@ -8,7 +8,7 @@ from ena.api import (
     write_response,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "build_query",
