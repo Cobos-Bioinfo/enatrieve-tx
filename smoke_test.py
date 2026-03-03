@@ -204,7 +204,7 @@ def _live_ena_fetch(tax_id: str, limit: int) -> None:
 
 def main() -> None:
     tax_id = "7460"  # Apis mellifera — Honey bee
-    limit = 5
+    limit = 100
 
     _check_python_version()
     _check_imports()

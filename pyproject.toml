@@ -25,7 +25,7 @@ dependencies = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-ena = ["data/*.txt"]
+ena = ["data/*.txt", "data/*.json"]
 
 
 [project.scripts]

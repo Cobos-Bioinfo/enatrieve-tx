@@ -135,6 +135,7 @@ RNA_seq_ENA.tsv
 *.tsv
 *.csv
 *.json
+!/src/ena/data/presets.json
 
 # Agents
 agents/*

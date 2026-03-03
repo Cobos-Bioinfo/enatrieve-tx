@@ -54,14 +54,14 @@ python smoke_test.py
 
 Defaults:
 - Uses TaxID **7460** (Apis mellifera — Honey bee)
-- Uses `max-records=5` for the live ENA call
+- Uses `max-records=100` for the live ENA call
 
 ## Usage
 
 ### Command-Line Interface
 
 ```
-usage: enatrieve-tx [-h] -t TAX_ID [-s LIBRARY_STRATEGY] [-n MAX_RECORDS] [-e] [-o OUTPUT] [-f {tsv,json}] [-m] [-l LOG_FILE] [--fields FIELDS] [--list-fields]
+usage: enatrieve-tx [-h] -t TAX_ID [-s LIBRARY_STRATEGY] [-n MAX_RECORDS] [-e] [-o OUTPUT] [-f {tsv,json}] [-m] [-l LOG_FILE] [--fields FIELDS | --fields-preset PRESET] [--list-fields]
 
 Fetch ENA transcriptomic run metadata for a tax_id.
 
@@ -82,6 +82,9 @@ options:
                         Log file path (default: logs/<timestamp>_<tax_id>_<strategy>[_exact].log). Set to '' to disable file logging.
   --fields FIELDS       Comma-separated list of field names to retrieve (e.g., 'run_accession,tax_id,read_count').
                         If not specified, uses default minimal fields. Note: ENA API always includes 'run_accession'.
+  --fields-preset PRESET
+                        Use a named field preset (e.g., 'minimal', 'standard'). Mutually exclusive with --fields.
+                        Custom presets can be defined in config files.
   --list-fields         Display all available ENA fields and exit. Cannot be used with other options.
 ```
 
@@ -98,16 +101,74 @@ By default, `enatrieve-tx` retrieves a minimal set of fields to keep output comp
 
 **Note:** The ENA API always includes `run_accession` in responses, regardless of requested fields.
 
+#### Field Presets
+
+For convenience, `enatrieve-tx` provides built-in field presets that are included with the package:
+
+**Built-in Presets:** (no configuration needed)
+
+- **`minimal`** (default) - 4 fields: `run_accession`, `experiment_title`, `tax_id`, `scientific_name`
+- **`standard`** - 10 fields: `run_accession`, `experiment_title`, `tax_id`, `tax_lineage`, `scientific_name`, `library_source`, `library_strategy`, `instrument_platform`, `read_count`, `first_public`
+
+```bash
+# Use standard preset for comprehensive metadata
+enatrieve-tx -t 7460 --fields-preset standard -n 100 -o honeybee
+
+# Use minimal preset explicitly (same as default)
+enatrieve-tx -t 7460 --fields-preset minimal -n 100 -o honeybee
+```
+
+**Custom Presets:**
+
+You can define your own presets in a JSON configuration file to extend beyond the built-in presets. Create either:
+- **Project config**: `.enatrieve-tx.json` in your project directory (takes precedence)
+- **User config**: `~/.config/enatrieve-tx/presets.json` in your home directory
+
+**Note:** Built-in presets (`minimal` and `standard`) are bundled with the package in `src/ena/data/presets.json` and require no configuration.
+
+**Example config file:**
+
+```json
+{
+  "mypreset": {
+    "description": "My custom field selection",
+    "fields": [
+      "run_accession",
+      "tax_id",
+      "instrument_platform",
+      "read_count",
+      "sample_accession"
+    ]
+  },
+  "assembly": {
+    "description": "Assembly quality fields",
+    "fields": [
+      "run_accession",
+      "assembly_quality",
+      "assembly_software",
+      "completeness_score",
+      "contamination_score"
+    ]
+  }
+}
+```
+
+Then use your custom preset:
+
+```bash
+enatrieve-tx -t 7460 --fields-preset mypreset -n 100 -o honeybee
+```
+
 #### Customizing Fields
 
 You can customize which fields to retrieve using the `--fields` option:
 
 ```bash
 # Request specific fields
-enatrieve-tx -t 562 --fields run_accession,tax_id,instrument_platform,read_count -o ecoli_minimal
+enatrieve-tx -t 7460 --fields run_accession,tax_id,instrument_platform,read_count -n 100 -o honeybee_minimal
 
 # Request many fields for comprehensive data
-enatrieve-tx -t 562 --fields run_accession,experiment_title,tax_id,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public -o ecoli_full
+enatrieve-tx -t 7460 --fields run_accession,experiment_title,tax_id,scientific_name,library_source,library_strategy,instrument_platform,read_count,first_public -n 100 -o honeybee_standard
 ```
 
 #### Discovering Available Fields
@@ -136,7 +197,7 @@ If you specify custom fields with `--fields` and also use `--summary`, any missi
 
 ```bash
 # This command will auto-add instrument_platform and read_count
-enatrieve-tx -t 562 --fields run_accession,experiment_title,tax_id --summary -o ecoli
+enatrieve-tx -t 7460 --fields run_accession,experiment_title,tax_id --summary -n 100 -o honeybee
 ```
 
 Output:
@@ -188,10 +249,10 @@ The default `--max-records` is **10000**. To retrieve all matching records witho
 
 ```bash
 # Retrieve all results (no limit)
-enatrieve-tx -t 562 --max-records 0 -o ecoli_all
+enatrieve-tx -t 7460 --max-records 0 -o honeybee_all
 
 # Retrieve only first 100 records
-enatrieve-tx -t 562 --max-records 100 -o ecoli_sample
+enatrieve-tx -t 7460 --max-records 100 -o honeybee_sample
 ```
 
 ### Known Limitations

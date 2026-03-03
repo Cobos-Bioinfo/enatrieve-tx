@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from datetime import datetime
@@ -12,9 +13,133 @@ from ena import (
     fetch_stream,
     write_response,
 )
+from ena.api import DEFAULT_FIELDS
 from ena.summary import generate_summary, REQUIRED_COLUMNS
 
 logger = logging.getLogger(__name__)
+
+
+def load_builtin_presets() -> dict[str, dict]:
+    """Load built-in field presets from the bundled JSON file.
+    
+    Returns:
+        Dictionary of preset definitions with structure:
+        {
+            "preset_name": {
+                "description": "...",
+                "fields": ["field1", "field2", ...]
+            }
+        }
+        
+    Raises:
+        FileNotFoundError: If the presets file cannot be found.
+        json.JSONDecodeError: If the presets file is malformed.
+    """
+    presets_file = Path(__file__).parent / "data" / "presets.json"
+
+    if not presets_file.exists():
+        raise FileNotFoundError(
+            f"Presets file not found at {presets_file}. "
+            "This file should be bundled with the package."
+        )
+
+    with open(presets_file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_user_presets() -> dict[str, dict]:
+    """Load user-defined custom presets from config file if it exists.
+    
+    Checks for config file in:
+    1. Current directory: .enatrieve-tx.json
+    2. User config: ~/.config/enatrieve-tx/presets.json
+    
+    Returns:
+        Dictionary of user preset definitions, or empty dict if no config found.
+    """
+    # Check current directory first (project-specific)
+    project_config = Path(".enatrieve-tx.json")
+    if project_config.exists():
+        try:
+            with open(project_config, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            logger.warning("Failed to parse %s: %s", project_config, e)
+            return {}
+
+    # Check user config directory
+    user_config = Path.home() / ".config" / "enatrieve-tx" / "presets.json"
+    if user_config.exists():
+        try:
+            with open(user_config, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            logger.warning("Failed to parse %s: %s", user_config, e)
+            return {}
+
+    return {}
+
+
+def get_preset_fields(preset_name: str) -> list[str]:
+    """Get field list for a named preset.
+    
+    Checks user presets first, then falls back to built-in presets.
+    
+    Args:
+        preset_name: Name of the preset to retrieve.
+        
+    Returns:
+        List of field names for the preset.
+        
+    Raises:
+        ValueError: If preset is not found in either user or built-in presets.
+    """
+    # Try user presets first
+    user_presets = load_user_presets()
+    if preset_name in user_presets:
+        preset = user_presets[preset_name]
+        return preset.get("fields", [])
+
+    # Fall back to built-in presets
+    try:
+        builtin_presets = load_builtin_presets()
+        if preset_name in builtin_presets:
+            preset = builtin_presets[preset_name]
+            return preset.get("fields", [])
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.error("Failed to load built-in presets: %s", e)
+
+    # Preset not found
+    available = list_available_presets()
+    raise ValueError(
+        f"Preset '{preset_name}' not found.\n"
+        f"Available presets: {', '.join(available)}\n"
+        f"To create custom presets, see: https://github.com/Cobos-Bioinfo/enatrieve-tx#custom-presets"
+    )
+
+
+def list_available_presets() -> list[str]:
+    """Get list of all available preset names (user + built-in).
+    
+    Returns:
+        List of preset names, with user presets listed first.
+    """
+    presets = []
+
+    # User presets first
+    user_presets = load_user_presets()
+    presets.extend(user_presets.keys())
+
+    # Built-in presets
+    try:
+        builtin_presets = load_builtin_presets()
+        for name in builtin_presets.keys():
+            if name not in presets:  # Avoid duplicates if user overrides
+                presets.append(name)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+
+    return presets
 
 
 def load_available_fields() -> list[str]:
@@ -28,13 +153,13 @@ def load_available_fields() -> list[str]:
     """
     # Try to find the fields file in the package data directory
     fields_file = Path(__file__).parent / "data" / "ena_fields.txt"
-    
+
     if not fields_file.exists():
         raise FileNotFoundError(
             f"Fields reference file not found at {fields_file}. "
             "This file should be bundled with the package."
         )
-    
+
     fields = []
     with open(fields_file, "r", encoding="utf-8") as f:
         for line in f:
@@ -42,7 +167,7 @@ def load_available_fields() -> list[str]:
             # Skip empty lines and comments
             if line and not line.startswith("#"):
                 fields.append(line)
-    
+
     return fields
 
 
@@ -140,12 +265,21 @@ def parse_args() -> argparse.Namespace:
     )
 
     # Field Customization
-    parser.add_argument(
+    field_group = parser.add_mutually_exclusive_group()
+    field_group.add_argument(
         "--fields",
         dest="fields",
         default=None,
         help="Comma-separated list of field names to retrieve (e.g., 'run_accession,tax_id,read_count'). "
              "If not specified, uses default minimal fields. Note: ENA API always includes 'run_accession'.",
+    )
+    field_group.add_argument(
+        "--fields-preset",
+        dest="fields_preset",
+        default=None,
+        help="Use a named field preset (e.g., 'minimal', 'standard'). "
+             "Mutually exclusive with --fields. Custom presets can be defined in "
+             "~/.config/enatrieve-tx/presets.json or .enatrieve-tx.json",
     )
     parser.add_argument(
         "--list-fields",
@@ -231,7 +365,7 @@ def main() -> None:
     if "--list-fields" in sys.argv:
         display_available_fields()
         sys.exit(0)
-    
+
     args = parse_args()
 
     tax_id = args.tax_id
@@ -240,21 +374,6 @@ def main() -> None:
     exact = getattr(args, "exact", False)
     operator = "tax_eq" if exact else "tax_tree"
     output_format = args.output_format
-
-    # Parse user-provided fields
-    user_fields = None
-    if args.fields:
-        user_fields = [f.strip() for f in args.fields.split(",") if f.strip()]
-    
-    # Auto-add summary-required fields if summary is requested
-    if args.summary and user_fields is not None:
-        missing_fields = REQUIRED_COLUMNS - set(user_fields)
-        if missing_fields:
-            logger.warning(
-                "Adding required fields for summary generation: %s",
-                ", ".join(sorted(missing_fields))
-            )
-            user_fields.extend(sorted(missing_fields))
 
     # Determine file extension based on format
     extension = "tsv" if output_format == "tsv" else "json"
@@ -274,6 +393,35 @@ def main() -> None:
         output = f"{args.output}.{extension}"
 
     setup_logging(args.log_file, tax_id, strategy, exact)
+
+    # Parse user-provided fields or preset
+    user_fields = None
+    if args.fields_preset:
+        # Load fields from preset
+        try:
+            user_fields = get_preset_fields(args.fields_preset)
+            logger.info("Using preset '%s' with %d fields", args.fields_preset, len(user_fields))
+        except ValueError as e:
+            logger.error(str(e))
+            sys.exit(1)
+    elif args.fields:
+        # Parse comma-separated field list
+        user_fields = [f.strip() for f in args.fields.split(",") if f.strip()]
+
+    # Auto-add summary-required fields if summary is requested
+    if args.summary:
+        # If no custom fields specified, start with defaults
+        if user_fields is None:
+            user_fields = DEFAULT_FIELDS.copy()
+        
+        # Check for missing required fields and add them
+        missing_fields = REQUIRED_COLUMNS - set(user_fields)
+        if missing_fields:
+            logger.warning(
+                "Adding required fields for summary generation: %s",
+                ", ".join(sorted(missing_fields))
+            )
+            user_fields.extend(sorted(missing_fields))
 
     logger.info(
         "tax_id=%s strategy=%s max_records=%d format=%s output=%s",
