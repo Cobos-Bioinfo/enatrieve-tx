@@ -1,0 +1,26 @@
+{
+  "minimal": {
+    "description": "Minimal field set (default)",
+    "fields": [
+      "run_accession",
+      "experiment_title",
+      "tax_id",
+      "scientific_name"
+    ]
+  },
+  "standard": {
+    "description": "Standard comprehensive field set",
+    "fields": [
+      "run_accession",
+      "experiment_title",
+      "tax_id",
+      "tax_lineage",
+      "scientific_name",
+      "library_source",
+      "library_strategy",
+      "instrument_platform",
+      "read_count",
+      "first_public"
+    ]
+  }
+}
