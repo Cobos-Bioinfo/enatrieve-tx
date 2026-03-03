@@ -262,6 +262,7 @@ enatrieve-tx -t 7460 --max-records 100 -o honeybee_sample
 
 ### Version History
 
+- **0.4.0** - Added field presets system (`--fields-preset`) with built-in minimal/standard presets and custom preset support; improved summary auto-add logic; standardized documentation examples to TaxID 7460.
 - **0.3.0** - Added a new-clone smoke test (`smoke_test.py`), metadata summary option (`-m/--summary`) and updated documentation.
 - **0.2.0** - Added operator toggle (`-e/--exact-match`) and short CLI flags; refactored packaging (src layout, console script) and removed top‑level script.
 - **0.1.0** - Initial release with modular library and CLI interface
