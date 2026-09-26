@@ -1,3 +1,14 @@
+> [!WARNING]
+> **This project is archived and no longer maintained.**
+>
+> It has been superseded by [**enaportal**](https://github.com/Cobos-Bioinfo/enaportal),
+> a general-purpose typed Python client for the full ENA Portal and Browser
+> APIs. `enatrieve-tx` only answered one question (RNA-Seq runs for a taxon);
+> `enaportal` covers all 15 ENA result types, validates queries against ENA's
+> live schema, and handles resumable bulk retrieval.
+>
+> Please use `enaportal` instead. This repository stays up for reference only.
+
 # ENA Transcriptomic Data Retriever (enatrieve_tx)
 
 A Python tool for efficiently querying and downloading transcriptomic sequencing data from the EMBL-EBI ENA Portal API by NCBI taxonomy identifier.
